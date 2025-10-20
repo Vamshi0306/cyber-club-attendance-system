@@ -2,37 +2,71 @@
 {% block content %}
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Admin Dashboard</h1>
-        <a href="{{ url_for('add_event') }}" class="btn btn-primary">Add New Event</a>
+        <h1><i class="fas fa-user-shield"></i> Admin Control Panel</h1>
+        <a href="{{ url_for('add_event') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add New Event</a>
     </div>
 
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary p-3">
+                <h4><i class="fas fa-users"></i> Total Students</h4>
+                <h2 class="display-4">{{ total_students }}</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info p-3">
+                <h4><i class="fas fa-calendar-alt"></i> Total Events</h4>
+                <h2 class="display-4">{{ total_events }}</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success p-3">
+                <h4><i class="fas fa-check-circle"></i> Total Attendance</h4>
+                <h2 class="display-4">{{ total_attendance }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Tables -->
     <div class="row">
         <div class="col-md-7">
-            <h2>Manage Events</h2>
+            <h3><i class="fas fa-calendar-check"></i> Manage Events</h3>
             <div class="list-group">
                 {% for event in events %}
-                <div class="list-group-item list-group-item-action flex-column align-items-start">
+                <div class="list-group-item">
                     <div class="d-flex w-100 justify-content-between">
                         <h5 class="mb-1">{{ event.title }}</h5>
                         <small>{{ event.date.strftime('%Y-%m-%d') }}</small>
                     </div>
                     <p class="mb-1">{{ event.description }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-success rounded-pill">{{ event.attendance|length }} Attended</span>
+                        <form action="{{ url_for('delete_event', event_id=event.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this event and all its attendance records?');">
+                            <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> Delete</button>
+                        </form>
+                    </div>
                 </div>
                 {% else %}
                 <div class="list-group-item">No events found.</div>
                 {% endfor %}
             </div>
         </div>
-
         <div class="col-md-5">
-            <h2>All Students</h2>
-            <ul class="list-group">
+            <h3><i class="fas fa-user-graduate"></i> Manage Students</h3>
+            <div class="list-group">
                 {% for student in students %}
-                <li class="list-group-item">{{ student.name }} <br><small class="text-muted">{{ student.email }}</small></li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <img src="{{ url_for('static', filename='profile_pics/' + student.profile_pic) }}" class="rounded-circle me-2" height="30" width="30" style="object-fit: cover;">
+                        {{ student.name }} <small class="text-muted">({{ student.email }})</small>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">{{ student.attendance|length }}</span>
+                </li>
                 {% else %}
                 <li class="list-group-item">No students have registered yet.</li>
                 {% endfor %}
-            </ul>
+            </div>
         </div>
     </div>
 </div>
