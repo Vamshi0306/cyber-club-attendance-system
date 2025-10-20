@@ -1,27 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Cyber Club Attendance System</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Club Attendance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body { background: linear-gradient(to bottom, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .hero { text-align: center; padding: 50px 20px; color: white; }
+        .hero h1 { font-size: 2.5rem; font-weight: bold; margin-bottom: 10px; }
+        .hero p { font-size: 1.2rem; margin-bottom: 20px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; transition: 0.3s; }
+        .btn:hover { transform: scale(1.05); }
+        .btn-primary { background: #4f46e5; color: white; }
+        .btn-secondary { background: #e5e7eb; color: black; }
+    </style>
 </head>
-<body class="min-h-screen bg-gray-100">
-  <nav class="bg-blue-600 p-4 text-white flex justify-between">
-    <h1>Cyber Club</h1>
-    <div id="nav-buttons">
-      <button onclick="showPage('landing')">Home</button>
-      <button onclick="showPage('register')">Register</button>
-      <button onclick="showPage('login')">Login</button>
-      <button onclick="showPage('profile')" id="profile-btn" style="display:none;">Profile</button>
-      <button onclick="showPage('attendance')" id="attendance-btn" style="display:none;">Attendance</button>
-      <button onclick="showPage('leaderboard')" id="leaderboard-btn" style="display:none;">Leaderboard</button>
-      <button onclick="logout()" id="logout-btn" style="display:none;">Logout</button>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-lg p-4 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-indigo-600">Cyber Club</h1>
+        <div id="nav-buttons" class="space-x-4">
+            <button onclick="showPage('landing')" class="btn btn-secondary">Home</button>
+            <button onclick="showPage('register')" class="btn btn-primary">Register</button>
+            <button onclick="showPage('login')" class="btn btn-primary">Login</button>
+            <button onclick="showPage('profile')" id="profile-btn" class="btn btn-secondary" style="display:none;">Profile</button>
+            <button onclick="showPage('attendance')" id="attendance-btn" class="btn btn-secondary" style="display:none;">Attendance</button>
+            <button onclick="showPage('leaderboard')" id="leaderboard-btn" class="btn btn-secondary" style="display:none;">Leaderboard</button>
+            <button onclick="logout()" id="logout-btn" class="btn btn-secondary" style="display:none;">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div id="content" class="container mx-auto p-4">
+        <!-- Default Landing Page -->
+        <div class="hero">
+            <h1>Welcome to Cyber Club Attendance System</h1>
+            <p>Manage your profile, mark attendance, and track events easily.</p>
+            <button onclick="showPage('register')" class="btn btn-primary">Get Started</button>
+        </div>
     </div>
-  </nav>
-  <div id="content">
-    <!-- Pages will be loaded here via JS -->
-  </div>
-  <script src="script.js"></script>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white text-center p-4 mt-8">
+        <p>&copy; 2023 Cyber Club. Built for learning.</p>
+    </footer>
+
+    <script src="script.js"></script>
 </body>
 </html>
