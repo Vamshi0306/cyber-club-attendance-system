@@ -5,7 +5,7 @@ const User = require('../models/User');
 const nodemailer = require('nodemailer');
 const router = express.Router();
 
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
 });
@@ -28,5 +28,6 @@ router.post('/login', async (req, res) => {
     res.status(401).json({ message: 'Invalid credentials' });
   }
 });
+
 
 module.exports = router;
