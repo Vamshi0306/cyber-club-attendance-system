@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="col-md-8 offset-md-2">
+      <h2>My Profile</h2>
+      <div class="card">
+        <div class="card-body">
+           <form method="POST" action="">
+                <div class="form-group mb-3">
+                    <label>Email</label>
+                    <input type="email" class="form-control" value="{{ user.email }}" readonly>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="name">Full Name</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="branch">Branch</label>
+                    <select class="form-select" id="branch" name="branch">
+                        <option {% if user.branch == 'Cyber Security' %}selected{% endif %}>Cyber Security</option>
+                        <option {% if user.branch == 'AIML' %}selected{% endif %}>AIML</option>
+                    </select>
+                </div>
+                 <div class="form-group mb-3">
+                    <label for="year">Year</label>
+                    <input type="number" class="form-control" id="year" name="year" value="{{ user.year }}" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Profile</button>
+           </form>
+        </div>
+      </div>
+    </div>
+{% endblock content %}

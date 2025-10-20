@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="col-md-10 offset-md-1">
+        <h2>My Attendance History</h2>
+        {% if attendance_records %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Event Title</th>
+                        <th>Event Date</th>
+                        <th>Marked At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in attendance_records %}
+                        <tr>
+                            <td>{{ record.event.title }}</td>
+                            <td>{{ record.event.date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ record.marked_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>You have not attended any sessions yet.</p>
+        {% endif %}
+    </div>
+{% endblock content %}
