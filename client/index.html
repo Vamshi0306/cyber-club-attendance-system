@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cyber Club Attendance System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen bg-gray-100">
+  <nav class="bg-blue-600 p-4 text-white flex justify-between">
+    <h1>Cyber Club</h1>
+    <div id="nav-buttons">
+      <button onclick="showPage('landing')">Home</button>
+      <button onclick="showPage('register')">Register</button>
+      <button onclick="showPage('login')">Login</button>
+      <button onclick="showPage('profile')" id="profile-btn" style="display:none;">Profile</button>
+      <button onclick="showPage('attendance')" id="attendance-btn" style="display:none;">Attendance</button>
+      <button onclick="showPage('leaderboard')" id="leaderboard-btn" style="display:none;">Leaderboard</button>
+      <button onclick="logout()" id="logout-btn" style="display:none;">Logout</button>
+    </div>
+  </nav>
+  <div id="content">
+    <!-- Pages will be loaded here via JS -->
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
