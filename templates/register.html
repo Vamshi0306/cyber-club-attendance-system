@@ -1,41 +1,45 @@
 {% extends "layout.html" %}
 {% block content %}
-    <div class="content-section col-md-6 offset-md-3">
-        <form method="POST" action="">
+<div class="col-md-6 offset-md-3">
+    <div class="card p-4">
+        <form method="POST" action="" enctype="multipart/form-data">
             <fieldset class="form-group">
                 <legend class="border-bottom mb-4">Join Today</legend>
                 <div class="form-group mb-3">
-                    <label for="name">Full Name</label>
+                    <label class="form-label" for="profile_pic">Profile Picture</label>
+                    <input type="file" class="form-control" id="profile_pic" name="profile_pic" accept="image/png, image/jpeg, image/jpg" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label" for="name">Full Name</label>
                     <input type="text" class="form-control" id="name" name="name" required>
                 </div>
                 <div class="form-group mb-3">
-                    <label for="email">Email address</label>
+                    <label class="form-label" for="email">Email address</label>
                     <input type="email" class="form-control" id="email" name="email" required>
                 </div>
                 <div class="form-group mb-3">
-                    <label for="password">Password</label>
+                    <label class="form-label" for="password">Password</label>
                     <input type="password" class="form-control" id="password" name="password" required>
                 </div>
                 <div class="form-group mb-3">
-                    <label for="branch">Branch</label>
+                    <label class="form-label" for="branch">Branch</label>
                     <select class="form-select" id="branch" name="branch">
                         <option>Cyber Security</option>
                         <option>AIML</option>
                     </select>
                 </div>
-                 <div class="form-group mb-3">
-                    <label for="year">Year</label>
+                <div class="form-group mb-3">
+                    <label class="form-label" for="year">Year</label>
                     <input type="number" class="form-control" id="year" name="year" required min="1" max="4">
                 </div>
             </fieldset>
-            <div class="form-group">
-                <button class="btn btn-outline-info" type="submit">Sign Up</button>
+            <div class="form-group mt-4">
+                <button class="btn btn-primary w-100" type="submit">Sign Up & Verify Email</button>
             </div>
         </form>
         <div class="border-top pt-3 mt-3">
-            <small class="text-muted">
-                Already Have An Account? <a class="ml-2" href="{{ url_for('login') }}">Sign In</a>
-            </small>
+            <small>Already Have An Account? <a href="{{ url_for('login') }}">Sign In</a></small>
         </div>
     </div>
+</div>
 {% endblock content %}
