@@ -1,26 +1,26 @@
 {% extends "layout.html" %}
 {% block content %}
-    <div class="content-section col-md-6 offset-md-3">
+<div class="col-md-6 offset-md-3">
+    <div class="card p-4">
         <form method="POST" action="">
             <fieldset class="form-group">
                 <legend class="border-bottom mb-4">Log In</legend>
                 <div class="form-group mb-3">
-                    <label for="email">Email address</label>
+                    <label for="email" class="form-label">Email address</label>
                     <input type="email" class="form-control" id="email" name="email" required>
                 </div>
                 <div class="form-group mb-3">
-                    <label for="password">Password</label>
+                    <label for="password" class="form-label">Password</label>
                     <input type="password" class="form-control" id="password" name="password" required>
                 </div>
             </fieldset>
             <div class="form-group">
-                <button class="btn btn-outline-info" type="submit">Login</button>
+                <button class="btn btn-primary w-100" type="submit">Login</button>
             </div>
         </form>
         <div class="border-top pt-3 mt-3">
-            <small class="text-muted">
-                Need An Account? <a class="ml-2" href="{{ url_for('register') }}">Sign Up Now</a>
-            </small>
+            <small>Need An Account? <a href="{{ url_for('register') }}">Sign Up Now</a></small>
         </div>
     </div>
+</div>
 {% endblock content %}
