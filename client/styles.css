@@ -1,5 +1,0 @@
-body { font-family: Arial, sans-serif; }
-form { max-width: 400px; margin: 0 auto; padding: 20px; }
-input, select, button { display: block; margin: 10px 0; padding: 10px; width: 100%; }
-button { background: #3b82f6; color: white; border: none; cursor: pointer; }
-.hidden { display: none; }
