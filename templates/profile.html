@@ -1,27 +1,28 @@
 {% extends "layout.html" %}
 {% block content %}
-    <div class="col-md-8 offset-md-2">
+<div class="row">
+    <div class="col-md-6">
       <h2>My Profile</h2>
-      <div class="card">
+      <div class="card border-primary">
         <div class="card-body">
            <form method="POST" action="">
                 <div class="form-group mb-3">
-                    <label>Email</label>
+                    <label class="form-label">Email</label>
                     <input type="email" class="form-control" value="{{ user.email }}" readonly>
                 </div>
                 <div class="form-group mb-3">
-                    <label for="name">Full Name</label>
+                    <label for="name" class="form-label">Full Name</label>
                     <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
                 </div>
                 <div class="form-group mb-3">
-                    <label for="branch">Branch</label>
+                    <label for="branch" class="form-label">Branch</label>
                     <select class="form-select" id="branch" name="branch">
                         <option {% if user.branch == 'Cyber Security' %}selected{% endif %}>Cyber Security</option>
                         <option {% if user.branch == 'AIML' %}selected{% endif %}>AIML</option>
                     </select>
                 </div>
                  <div class="form-group mb-3">
-                    <label for="year">Year</label>
+                    <label for="year" class="form-label">Year</label>
                     <input type="number" class="form-control" id="year" name="year" value="{{ user.year }}" required>
                 </div>
                 <button type="submit" class="btn btn-primary">Update Profile</button>
@@ -29,4 +30,47 @@
         </div>
       </div>
     </div>
+    <div class="col-md-6">
+        <div class="text-center">
+            <h3>My Attendance Summary</h3>
+            <div style="max-width: 400px; margin: auto;">
+                <canvas id="attendanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('/attendance-data')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('attendanceChart');
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Sessions Attended', 'Sessions Missed'],
+                        datasets: [{
+                            label: 'Attendance',
+                            data: [data.attended, data.missed],
+                            backgroundColor: ['#4E79A7', '#F28E2B'],
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'white' // Text color for the legend
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+    });
+</script>
 {% endblock content %}
