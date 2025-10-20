@@ -1,76 +1,41 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="row">
-    <div class="col-md-6">
-      <h2>My Profile</h2>
-      <div class="card border-primary">
-        <div class="card-body">
-           <form method="POST" action="">
-                <div class="form-group mb-3">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-control" value="{{ user.email }}" readonly>
-                </div>
-                <div class="form-group mb-3">
-                    <label for="name" class="form-label">Full Name</label>
-                    <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
-                </div>
-                <div class="form-group mb-3">
-                    <label for="branch" class="form-label">Branch</label>
-                    <select class="form-select" id="branch" name="branch">
-                        <option {% if user.branch == 'Cyber Security' %}selected{% endif %}>Cyber Security</option>
-                        <option {% if user.branch == 'AIML' %}selected{% endif %}>AIML</option>
-                    </select>
-                </div>
-                 <div class="form-group mb-3">
-                    <label for="year" class="form-label">Year</label>
-                    <input type="number" class="form-control" id="year" name="year" value="{{ user.year }}" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Update Profile</button>
-           </form>
+<div class="col-md-8 offset-md-2">
+    <div class="card p-4">
+        <div class="text-center mb-4">
+            <img src="{{ image_file }}" class="rounded-circle" height="150" width="150" style="object-fit: cover;">
+            <h2 class="mt-2">{{ user.name }}</h2>
         </div>
-      </div>
-    </div>
-    <div class="col-md-6">
-        <div class="text-center">
-            <h3>My Attendance Summary</h3>
-            <div style="max-width: 400px; margin: auto;">
-                <canvas id="attendanceChart"></canvas>
+        <form method="POST" action="" enctype="multipart/form-data">
+            <div class="form-group mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" value="{{ user.email }}" readonly>
             </div>
-        </div>
+            <div class="form-group mb-3">
+                <label for="profile_pic" class="form-label">Update Profile Picture</label>
+                <input type="file" class="form-control" id="profile_pic" name="profile_pic" accept="image/png, image/jpeg, image/jpg">
+            </div>
+            <div class="form-group mb-3">
+                <label for="name" class="form-label">Full Name</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+            </div>
+            <div class="form-group mb-3">
+                <label for="branch" class="form-label">Branch</label>
+                <select class="form-select" id="branch" name="branch">
+                    <option {% if user.branch == 'Cyber Security' %}selected{% endif %}>Cyber Security</option>
+                    <option {% if user.branch == 'AIML' %}selected{% endif %}>AIML</option>
+                </select>
+            </div>
+            <div class="form-group mb-3">
+                <label for="year" class="form-label">Year</label>
+                <input type="number" class="form-control" id="year" name="year" value="{{ user.year }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Profile</button>
+        </form>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        fetch('/attendance-data')
-            .then(response => response.json())
-            .then(data => {
-                const ctx = document.getElementById('attendanceChart');
-                new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: ['Sessions Attended', 'Sessions Missed'],
-                        datasets: [{
-                            label: 'Attendance',
-                            data: [data.attended, data.missed],
-                            backgroundColor: ['#4E79A7', '#F28E2B'],
-                            hoverOffset: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                labels: {
-                                    color: 'white' // Text color for the legend
-                                }
-                            }
-                        }
-                    }
-                });
-            });
+{% endblock content %}
     });
 </script>
 {% endblock content %}
+
