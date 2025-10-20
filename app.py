@@ -159,13 +159,18 @@ def history():
     user_attendance = Attendance.query.filter_by(user_id=current_user.id).all()
     return render_template('history.html', attendance_records=user_attendance)
 
-# This is the main entry point to run the app
+# --- CLI COMMAND TO INITIALIZE THE DATABASE ---
+@app.cli.command("init-db")
+def init_db_command():
+    """Clears the existing data and creates new tables."""
+    db.create_all()
+    # Create a dummy event if none exist for testing
+    if not Event.query.first():
+        dummy_event = Event(title="First Cyber Club Session", description="Introduction to Web Security.", is_active=True)
+        db.session.add(dummy_event)
+        db.session.commit()
+    print("Initialized the database.")
+
+# This block is only needed if you were to run 'python app.py' directly
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all() # Create database tables if they don't exist
-        # Create a dummy event if none exist, for testing
-        if not Event.query.first():
-            dummy_event = Event(title="First Cyber Club Session", description="Introduction to Web Security.", is_active=True)
-            db.session.add(dummy_event)
-            db.session.commit()
     app.run(debug=True)
