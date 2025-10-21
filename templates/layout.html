@@ -6,9 +6,9 @@
     <link rel="stylesheet" href="https://bootswatch.com/5/cyborg/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>Cyber Club</title>
-    
+
     <style>
-        /* NEW: Low-transparency background logo */
+        /* Low-transparency background logo */
         body::before {
             content: "";
             position: fixed;
@@ -21,17 +21,17 @@
             background-position: center center;
             background-attachment: fixed;
             background-size: contain;
-            opacity: 0.05; /* Adjust this value (0.0 to 1.0) for transparency */
+            opacity: 0.05; 
             z-index: -1;
         }
 
-        /* NEW: Creative Button Style */
+        /* Creative Button Style */
         .btn {
             box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
             transition: all 0.2s ease-in-out;
         }
         .btn:hover {
-            transform: translateY(-2px); /* Lifts the button */
+            transform: translateY(-2px);
             box-shadow: 0 6px 12px 0 rgba(0,0,0,0.3);
         }
     </style>
@@ -74,7 +74,7 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        
+
         {% block content %}{% endblock %}
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
