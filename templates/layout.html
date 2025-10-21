@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://bootswatch.com/5/slate/bootstrap.min.css">
+    <link rel="stylesheet" href="https://bootswatch.com/5/cyborg/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>Cyber Club</title>
     
     <style>
+        /* NEW: Low-transparency background logo */
         body::before {
             content: "";
             position: fixed;
@@ -23,10 +24,20 @@
             opacity: 0.05; /* Adjust this value (0.0 to 1.0) for transparency */
             z-index: -1;
         }
+
+        /* NEW: Creative Button Style */
+        .btn {
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover {
+            transform: translateY(-2px); /* Lifts the button */
+            box-shadow: 0 6px 12px 0 rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('home') }}">
                 <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Cyber Club Logo" width="30" height="30" class="d-inline-block align-top rounded-circle">
