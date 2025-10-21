@@ -4,17 +4,20 @@
     <div class="card p-4">
         <form method="POST" action="">
             <fieldset class="form-group">
-                <legend class="border-bottom mb-4">Verify Your Email</legend>
-                <p>An OTP has been sent to <strong>{{ email }}</strong>. Please enter it below.</p>
+                <legend class="border-bottom mb-4">Check Your Email</legend>
+                <p>A 6-digit verification code has been sent to <strong>{{ email }}</strong>. Please enter it below.</p>
                 <div class="form-group mb-3">
-                    <label for="otp" class="form-label">6-Digit OTP</label>
+                    <label for="otp" class="form-label">Verification Code (OTP)</label>
                     <input type="text" class="form-control" id="otp" name="otp" required maxlength="6" autofocus>
                 </div>
             </fieldset>
             <div class="form-group">
-                <button class="btn btn-primary w-100" type="submit">Verify Account</button>
+                <button class="btn btn-primary w-100" type="submit">Verify and Log In</button>
             </div>
         </form>
+         <div class="border-top pt-3 mt-3">
+            <small>Didn't get a code? <a href="{{ url_for('login') }}">Try logging in again</a> to resend.</small>
+        </div>
     </div>
 </div>
 {% endblock content %}
