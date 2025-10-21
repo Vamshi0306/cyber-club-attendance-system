@@ -1,7 +1,9 @@
 {% extends "layout.html" %}
 {% block content %}
     <div class="p-5 mb-4 rounded-3 card">
-        <div class="container-fluid py-5 text-center"> <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Cyber Club Logo" style="width: 120px; margin-bottom: 20px;" class="rounded-circle">
+        <div class="container-fluid py-5 text-center">
+            
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Cyber Club Logo" style="width: 120px; margin-bottom: 20px;" class="rounded-circle">
             
             <h1 class="display-5 fw-bold">Welcome to the Cyber Club</h1>
             <p class="fs-4">Lock it down, Protect it up.</p>
@@ -92,7 +94,12 @@
                             y: { beginAtZero: true, ticks: { color: '#e0e0e0' } },
                             x: { ticks: { color: '#e0e0e0' } }
                         },
-                        plugins: { legend: { display: false } }
+                        plugins: { 
+                            legend: { display: false },
+                            labels: {
+                                fontColor: '#e0e0e0'
+                            }
+                        }
                     }
                 });
             });
