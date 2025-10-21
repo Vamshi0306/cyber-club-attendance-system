@@ -8,11 +8,6 @@ from datetime import datetime
 from functools import wraps
 from PIL import Image
 
-# --- NEW IMPORTS FOR THE FIX ---
-import requests
-import json
-import urllib3
-
 # --- APP & DATABASE CONFIGURATION ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'a_very_secret_key_change_this'
@@ -20,12 +15,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['UPLOAD_FOLDER'] = 'static/profile_pics'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# --- SENDGRID CONFIGURATION ---
-# YOU MUST ADD YOUR KEY HERE.
-SENDGRID_API_KEY = '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' 
-VERIFIED_SENDER_EMAIL = 'buddaramvamshidhar@gmail.com' # This should be your verified email
-
-# --- INVITE CODE REMOVED ---
+# --- NO API KEYS OR INVITE CODES NEEDED ---
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -39,37 +29,12 @@ def save_picture(form_picture):
     _, f_ext = os.path.splitext(form_picture.filename)
     picture_fn = random_hex + f_ext
     picture_path = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], picture_fn)
+
     output_size = (125, 125)
     i = Image.open(form_picture)
     i.thumbnail(output_size)
     i.save(picture_path)
     return picture_fn
-
-def send_otp_email(recipient_email, otp, name="User"):
-    """
-    Sends OTP using SendGrid via raw requests to BYPASS SSL VERIFICATION.
-    """
-    url = "https://api.sendgrid.com/v3/mail/send"
-    headers = {
-        "Authorization": f"Bearer {SENDGRID_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "personalizations": [{"to": [{"email": recipient_email}], "subject": "Your Cyber Club Verification Code"}],
-        "from": {"email": VERIFIED_SENDER_EMAIL, "name": "Cyber Club Admin"},
-        "content": [{"type": "text/html", "value": f'<p>Hello {name},</p><p>Your One-Time Password (OTP) is: <strong>{otp}</strong></p><p>This code will expire in 10 minutes.</p>'}]
-    }
-    try:
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        response = requests.post(url, headers=headers, data=json.dumps(data), verify=False)
-        if 200 <= response.status_code < 300:
-            return True
-        else:
-            print(f"Error from SendGrid API: {response.status_code} - {response.text}")
-            return False
-    except Exception as e:
-        print(f"Error sending email: {e}")
-        return False
 
 # --- DECORATORS ---
 def admin_required(f):
@@ -86,6 +51,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # --- DATABASE MODELS ---
+# We re-added 'is_verified' for the admin approval
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -96,9 +62,7 @@ class User(db.Model, UserMixin):
     profile_pic = db.Column(db.String(20), nullable=False, default='default.jpg')
     role = db.Column(db.String(10), nullable=False, default='student')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    is_verified = db.Column(db.Boolean, nullable=False, default=False)
-    otp = db.Column(db.String(6), nullable=True)
-    otp_generated_at = db.Column(db.DateTime, nullable=True)
+    is_verified = db.Column(db.Boolean, nullable=False, default=False) # False by default
     attendance = db.relationship('Attendance', backref='attendee', lazy=True)
 
 class Event(db.Model):
@@ -126,7 +90,7 @@ def home():
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
-    # ** INVITE CODE CHECK REMOVED **
+    # ** NEW: ADMIN APPROVAL LOGIC **
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     if request.method == 'POST':
@@ -136,8 +100,6 @@ def register():
         branch = request.form.get('branch')
         year = request.form.get('year')
         profile_pic = request.files.get('profile_pic')
-        
-        # --- Invite code check is GONE ---
 
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
@@ -149,62 +111,41 @@ def register():
             picture_file = save_picture(profile_pic)
 
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        otp = secrets.token_hex(3).upper()
         
-        new_user = User(name=name, email=email, password=hashed_password, branch=branch, year=year, profile_pic=picture_file, otp=otp, otp_generated_at=datetime.utcnow())
+        # Create user as 'is_verified=False' (pending)
+        new_user = User(name=name, email=email, password=hashed_password, branch=branch, year=year, profile_pic=picture_file, is_verified=False)
         db.session.add(new_user)
         db.session.commit()
-        
-        if send_otp_email(email, otp, name):
-            flash('Registration successful! Please check your email for a verification code.', 'success')
-            return redirect(url_for('verify_otp', email=email))
-        else:
-            flash('Could not send verification email. Please contact an admin.', 'danger')
-            return redirect(url_for('register'))
+
+        flash('Registration successful! Your account is now pending admin approval.', 'success')
+        return redirect(url_for('login'))
 
     return render_template('register.html')
 
-@app.route("/verify_otp/<email>", methods=['GET', 'POST'])
-def verify_otp(email):
-    user = User.query.filter_by(email=email).first_or_404()
-    if request.method == 'POST':
-        entered_otp = request.form.get('otp')
-        time_diff = datetime.utcnow() - user.otp_generated_at
-        if time_diff.total_seconds() > 600:
-            flash('OTP has expired. Please try to log in again to get a new one.', 'danger')
-            return redirect(url_for('login'))
-        if user.otp == entered_otp:
-            user.is_verified = True
-            user.otp = None
-            db.session.commit()
-            login_user(user, remember=True)
-            flash('Verification successful! You are now logged in.', 'success')
-            return redirect(url_for('home'))
-        else:
-            flash('Invalid OTP. Please try again.', 'danger')
-    return render_template('verify_otp.html', email=email)
-
 @app.route("/login", methods=['GET', 'POST'])
 def login():
+    # ** NEW: CHECK FOR APPROVAL **
     if current_user.is_authenticated:
         return redirect(url_for('home'))
+        
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
+
         if user and bcrypt.check_password_hash(user.password, password):
-            otp = secrets.token_hex(3).upper()
-            user.otp = otp
-            user.otp_generated_at = datetime.utcnow()
-            db.session.commit()
-            if send_otp_email(user.email, otp, user.name):
-                flash('Login credentials correct. Please check your email for a verification code.', 'info')
-                return redirect(url_for('verify_otp', email=user.email))
-            else:
-                flash('Could not send verification email. Please try again or contact an admin.', 'danger')
+            # NEW CHECK: Is the user approved?
+            if not user.is_verified:
+                flash('Your account is still pending admin approval. Please wait.', 'warning')
                 return redirect(url_for('login'))
+            
+            # User is approved, log them in
+            login_user(user, remember=True)
+            flash('Login successful!', 'success')
+            return redirect(url_for('home'))
         else:
             flash('Login unsuccessful. Please check email and password.', 'danger')
+            
     return render_template('login.html')
 
 @app.route("/logout")
@@ -248,13 +189,46 @@ def mark_attendance(event_id):
 @login_required
 @admin_required
 def admin_dashboard():
-    total_students = User.query.filter_by(role='student').count()
+    # NEW: Get pending users
+    pending_users = User.query.filter_by(is_verified=False, role='student').order_by(User.created_at.desc()).all()
+    
+    total_students = User.query.filter_by(role='student', is_verified=True).count()
     total_events = Event.query.count()
     total_attendance = Attendance.query.count()
-    students = User.query.filter_by(role='student').order_by(User.name).all()
+    students = User.query.filter_by(role='student', is_verified=True).order_by(User.name).all()
     events = Event.query.order_by(Event.date.desc()).all()
+    
     return render_template('admin.html', students=students, events=events, 
+                           pending_users=pending_users, # Pass pending users to template
                            total_students=total_students, total_events=total_events, total_attendance=total_attendance)
+
+# NEW: Route to approve a user
+@app.route("/admin/approve/<int:user_id>")
+@login_required
+@admin_required
+def approve_user(user_id):
+    user = User.query.get_or_404(user_id)
+    user.is_verified = True
+    db.session.commit()
+    flash(f"User {user.name} has been approved.", "success")
+    return redirect(url_for('admin_dashboard'))
+
+# NEW: Route to deny (delete) a user
+@app.route("/admin/deny/<int:user_id>")
+@login_required
+@admin_required
+def deny_user(user_id):
+    user = User.query.get_or_404(user_id)
+    # Delete profile picture if it's not the default
+    if user.profile_pic != 'default.jpg':
+        try:
+            os.remove(os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], user.profile_pic))
+        except FileNotFoundError:
+            pass # Ignore if pic is already missing
+    db.session.delete(user)
+    db.session.commit()
+    flash(f"User {user.name} has been denied and deleted.", "success")
+    return redirect(url_for('admin_dashboard'))
 
 @app.route("/admin/event/add", methods=['GET', 'POST'])
 @login_required
@@ -302,10 +276,8 @@ def init_db_command():
         email = 'buddaramvamshidhar@gmail.com' 
         password = 'password'       
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        # Admin must be 'is_verified=True' to be able to log in
         admin_user = User(name='Admin', email=email, password=hashed_password, branch='SYSTEM', year=0, role='admin', is_verified=True)
         db.session.add(admin_user)
         db.session.commit()
         print(f"Admin user created with email: {email} and password: {password}")
-
-
-
