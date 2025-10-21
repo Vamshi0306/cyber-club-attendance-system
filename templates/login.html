@@ -1,37 +1,26 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="col-md-8 offset-md-2">
+<div class="col-md-6 offset-md-3">
     <div class="card p-4">
-        <div class="text-center mb-4">
-            <img src="{{ image_file }}" class="rounded-circle" height="150" width="150" style="object-fit: cover;">
-            <h2 class="mt-2">{{ user.name }}</h2>
-        </div>
-        <form method="POST" action="" enctype="multipart/form-data">
-            <div class="form-group mb-3">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-control" value="{{ user.email }}" readonly>
+        <form method="POST" action="">
+            <fieldset class="form-group">
+                <legend class="border-bottom mb-4">Log In</legend>
+                <div class="form-group mb-3">
+                    <label for="email" class="form-label">Email address</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+            </fieldset>
+            <div class="form-group">
+                <button class="btn btn-primary w-100" type="submit">Login</button>
             </div>
-            <div class="form-group mb-3">
-                <label for="profile_pic" class="form-label">Update Profile Picture</label>
-                <input type="file" class="form-control" id="profile_pic" name="profile_pic" accept="image/png, image/jpeg, image/jpg">
-            </div>
-            <div class="form-group mb-3">
-                <label for="name" class="form-label">Full Name</label>
-                <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
-            </div>
-            <div class="form-group mb-3">
-                <label for="branch" class="form-label">Branch</label>
-                <select class="form-select" id="branch" name="branch">
-                    <option {% if user.branch == 'Cyber Security' %}selected{% endif %}>Cyber Security</option>
-                    <option {% if user.branch == 'AIML' %}selected{% endif %}>AIML</Noption>
-                </select>
-            </div>
-            <div class="form-group mb-3">
-                <label for="year" class="form-label">Year</label>
-                <input type="number" class="form-control" id="year" name="year" value="{{ user.year }}" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Update Profile</button>
         </form>
+        <div class="border-top pt-3 mt-3">
+            <small>Need An Account? <a href="{{ url_for('register') }}">Sign Up Now</a></small>
+        </div>
     </div>
 </div>
 {% endblock content %}
