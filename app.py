@@ -326,3 +326,4 @@ def init_db_command():
         db.session.add(admin_user)
         db.session.commit()
         print(f"Admin user created with email: {email} and password: {password}")
+
