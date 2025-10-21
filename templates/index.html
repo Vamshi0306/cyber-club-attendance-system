@@ -8,7 +8,6 @@
     </div>
     
     {% if current_user.is_authenticated %}
-        <!-- Student Dashboard -->
         <div class="row mb-4">
             <div class="col-md-8">
                 <div class="card h-100">
@@ -30,7 +29,6 @@
             </div>
         </div>
 
-        <!-- Upcoming Events -->
         <h2 class="mt-5">Upcoming Events</h2>
         <div class="list-group">
             {% for event in events %}
@@ -51,7 +49,6 @@
             {% endfor %}
         </div>
     {% else %}
-        <!-- Public view for non-logged-in users -->
         <div class="text-center">
             <h3>Please <a href="{{ url_for('login') }}">login</a> or <a href="{{ url_for('register') }}">register</a> to view events and manage your attendance.</h3>
         </div>
@@ -85,7 +82,7 @@
                         datasets: [{
                             label: 'Sessions',
                             data: [data.attended, data.missed],
-                            backgroundColor: ['#16c79a', '#e94560']
+                            backgroundColor: ['#2780E3', '#E95420'] // Blue and Orange
                         }]
                     },
                     options: {
