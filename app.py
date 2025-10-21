@@ -1,7 +1,5 @@
 import os
 import secrets
-import smtplib
-from email.message import EmailMessage
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -10,6 +8,10 @@ from datetime import datetime
 from functools import wraps
 from PIL import Image
 
+# --- SENDGRID IMPORTS ---
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
 # --- APP & DATABASE CONFIGURATION ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'a_very_secret_key_change_this'
@@ -17,9 +19,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['UPLOAD_FOLDER'] = 'static/profile_pics'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# --- EMAIL CONFIGURATION FOR OTP ---
-EMAIL_ADDRESS = 'YOUR_EMAIL@gmail.com'  # <--- CHANGE THIS
-EMAIL_PASSWORD = 'YOUR_16_DIGIT_APP_PASSWORD' # <--- CHANGE THIS
+# --- SENDGRID CONFIGURATION ---
+SENDGRID_API_KEY = 'YOUR_API_KEY_HERE' # <--- MAKE SURE THIS IS SET
+VERIFIED_SENDER_EMAIL = 'YOUR_VERIFIED_EMAIL@gmail.com' # <--- MAKE SURE THIS IS SET
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -33,27 +35,30 @@ def save_picture(form_picture):
     _, f_ext = os.path.splitext(form_picture.filename)
     picture_fn = random_hex + f_ext
     picture_path = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], picture_fn)
-
     output_size = (125, 125)
     i = Image.open(form_picture)
     i.thumbnail(output_size)
     i.save(picture_path)
     return picture_fn
 
-def send_otp_email(recipient_email, otp):
-    msg = EmailMessage()
-    msg['Subject'] = 'Your Cyber Club Verification Code'
-    msg['From'] = EMAIL_ADDRESS
-    msg['To'] = recipient_email
-    msg.set_content(f'Thank you for registering!\n\nYour One-Time Password (OTP) is: {otp}\n\nThis code will expire in 10 minutes.')
-
+def send_otp_email(recipient_email, otp, name="User"):
+    """Sends OTP using SendGrid."""
+    message = Mail(
+        from_email=VERIFIED_SENDER_EMAIL,
+        to_emails=recipient_email,
+        subject='Your Cyber Club Verification Code',
+        html_content=f'''
+            <p>Hello {name},</p>
+            <p>Your One-Time Password (OTP) is: <strong>{otp}</strong></p>
+            <p>This code will expire in 10 minutes.</p>
+        '''
+    )
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            smtp.send_message(msg)
-        return True
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        response = sg.send(message)
+        return 200 <= response.status_code < 300
     except Exception as e:
-        print(f"Error sending email: {e}")
+        print(f"Error sending email via SendGrid: {e}")
         return False
 
 # --- DECORATORS ---
@@ -71,6 +76,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # --- DATABASE MODELS ---
+# (Database models are unchanged)
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -102,17 +108,17 @@ class Attendance(db.Model):
 # --- AUTHENTICATION & USER ROUTES ---
 @app.route("/")
 def home():
+    # (No change in this route)
     upcoming_events = []
-    attendance_records = []
     if current_user.is_authenticated:
         upcoming_events = Event.query.filter(Event.date >= datetime.utcnow()).order_by(Event.date.asc()).all()
-        # Get a list of event IDs the user has attended
         attended_event_ids = [att.event_id for att in current_user.attendance]
         return render_template('index.html', events=upcoming_events, attended_event_ids=attended_event_ids)
     return render_template('index.html')
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
+    # (No change in this route)
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     if request.method == 'POST':
@@ -122,53 +128,53 @@ def register():
         branch = request.form.get('branch')
         year = request.form.get('year')
         profile_pic = request.files.get('profile_pic')
-
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
             flash('Email already exists. Please log in or use a different email.', 'danger')
             return redirect(url_for('register'))
-
         picture_file = 'default.jpg'
         if profile_pic:
             picture_file = save_picture(profile_pic)
-
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         otp = secrets.token_hex(3).upper()
-        
         new_user = User(name=name, email=email, password=hashed_password, branch=branch, year=year, profile_pic=picture_file, otp=otp, otp_generated_at=datetime.utcnow())
         db.session.add(new_user)
         db.session.commit()
-
-        if send_otp_email(email, otp):
+        if send_otp_email(email, otp, name):
             flash('Registration successful! Please check your email for a verification code.', 'success')
             return redirect(url_for('verify_otp', email=email))
         else:
             flash('Could not send verification email. Please contact an admin.', 'danger')
             return redirect(url_for('register'))
-
     return render_template('register.html')
 
 @app.route("/verify_otp/<email>", methods=['GET', 'POST'])
 def verify_otp(email):
+    # ** THIS ROUTE IS UPDATED **
+    # It now handles BOTH registration and login verification
     user = User.query.filter_by(email=email).first_or_404()
-    if user.is_verified:
-        flash('Account already verified. Please log in.', 'info')
-        return redirect(url_for('login'))
-        
+    
     if request.method == 'POST':
         entered_otp = request.form.get('otp')
+        
+        # Check for OTP expiration (10 minutes)
         time_diff = datetime.utcnow() - user.otp_generated_at
-        if time_diff.total_seconds() > 600: # OTP expires in 10 minutes
-            flash('OTP has expired. Please register again to get a new one.', 'danger')
-            # Optional: Delete user or allow resend
-            return redirect(url_for('register'))
-
-        if user.otp == entered_otp:
-            user.is_verified = True
-            user.otp = None # Clear OTP after verification
-            db.session.commit()
-            flash('Email verified successfully! You can now log in.', 'success')
+        if time_diff.total_seconds() > 600:
+            flash('OTP has expired. Please try to log in again to get a new one.', 'danger')
             return redirect(url_for('login'))
+
+        # Check if OTP is correct
+        if user.otp == entered_otp:
+            # Mark as verified (for new users)
+            user.is_verified = True
+            # Clear the OTP
+            user.otp = None
+            db.session.commit()
+            
+            # Log the user in
+            login_user(user, remember=True)
+            flash('Verification successful! You are now logged in.', 'success')
+            return redirect(url_for('home'))
         else:
             flash('Invalid OTP. Please try again.', 'danger')
 
@@ -176,21 +182,31 @@ def verify_otp(email):
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
+    # ** THIS ROUTE IS UPDATED **
+    # It now sends an OTP instead of logging in
     if current_user.is_authenticated:
         return redirect(url_for('home'))
+        
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
 
+        # Check if user exists and password is correct
         if user and bcrypt.check_password_hash(user.password, password):
-            if not user.is_verified:
-                flash('Your account is not verified. Please check your email for the OTP.', 'warning')
-                return redirect(url_for('verify_otp', email=user.email))
+            # Generate a new OTP
+            otp = secrets.token_hex(3).upper()
+            user.otp = otp
+            user.otp_generated_at = datetime.utcnow()
+            db.session.commit()
             
-            login_user(user, remember=True)
-            next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('home'))
+            # Send the OTP email
+            if send_otp_email(user.email, otp, user.name):
+                flash('Login credentials correct. Please check your email for a verification code.', 'info')
+                return redirect(url_for('verify_otp', email=user.email))
+            else:
+                flash('Could not send verification email. Please try again or contact an admin.', 'danger')
+                return redirect(url_for('login'))
         else:
             flash('Login unsuccessful. Please check email and password.', 'danger')
             
@@ -198,12 +214,14 @@ def login():
 
 @app.route("/logout")
 def logout():
+    # (No change in this route)
     logout_user()
     return redirect(url_for('home'))
 
 @app.route("/profile", methods=['GET', 'POST'])
 @login_required
 def profile():
+    # (No change in this route)
     if request.method == 'POST':
         current_user.name = request.form.get('name')
         current_user.branch = request.form.get('branch')
@@ -214,7 +232,6 @@ def profile():
         db.session.commit()
         flash('Your profile has been updated!', 'success')
         return redirect(url_for('profile'))
-        
     image_file = url_for('static', filename=f'profile_pics/{current_user.profile_pic}')
     return render_template('profile.html', user=current_user, image_file=image_file)
 
@@ -222,9 +239,9 @@ def profile():
 @app.route("/mark_attendance/<int:event_id>")
 @login_required
 def mark_attendance(event_id):
+    # (No change in this route)
     event = Event.query.get_or_404(event_id)
     already_marked = Attendance.query.filter_by(user_id=current_user.id, event_id=event.id).first()
-    
     if already_marked:
         flash('You have already marked attendance for this session.', 'info')
     else:
@@ -235,6 +252,7 @@ def mark_attendance(event_id):
     return redirect(url_for('home'))
     
 # --- ADMIN ROUTES ---
+# (All admin routes are unchanged)
 @app.route("/admin")
 @login_required
 @admin_required
@@ -242,10 +260,8 @@ def admin_dashboard():
     total_students = User.query.filter_by(role='student').count()
     total_events = Event.query.count()
     total_attendance = Attendance.query.count()
-    
     students = User.query.filter_by(role='student').order_by(User.name).all()
     events = Event.query.order_by(Event.date.desc()).all()
-    
     return render_template('admin.html', students=students, events=events, 
                            total_students=total_students, total_events=total_events, total_attendance=total_attendance)
 
@@ -253,7 +269,6 @@ def admin_dashboard():
 @login_required
 @admin_required
 def add_event():
-    # ... code is same as before ...
     if request.method == 'POST':
         title = request.form.get('title')
         description = request.form.get('description')
@@ -271,7 +286,6 @@ def add_event():
 @admin_required
 def delete_event(event_id):
     event = Event.query.get_or_404(event_id)
-    # Also delete associated attendance records
     Attendance.query.filter_by(event_id=event.id).delete()
     db.session.delete(event)
     db.session.commit()
@@ -279,32 +293,27 @@ def delete_event(event_id):
     return redirect(url_for('admin_dashboard'))
 
 # --- DATA & HELPER ROUTES ---
+# (No change in these routes)
 @app.route("/attendance-data")
 @login_required
 def attendance_data():
     total_events = Event.query.count()
     attended_count = Attendance.query.filter_by(user_id=current_user.id).count()
     missed_count = total_events - attended_count if total_events > attended_count else 0
-    
-    return jsonify({
-        'attended': attended_count, 
-        'missed': missed_count, 
-        'total': total_events
-    })
+    return jsonify({'attended': attended_count, 'missed': missed_count, 'total': total_events})
 
 # --- CLI COMMAND TO INITIALIZE DB ---
+# (No change in this route)
 @app.cli.command("init-db")
 def init_db_command():
     """Clears the existing data and creates new tables."""
     db.create_all()
     print("Initialized the database.")
-    # Check if an admin user exists, if not, create one
     if not User.query.filter_by(role='admin').first():
-        email = 'admin@example.com' # Change this if you want
-        password = 'password'       # Change this for security
+        email = 'admin@example.com' 
+        password = 'password'       
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         admin_user = User(name='Admin', email=email, password=hashed_password, branch='SYSTEM', year=0, role='admin', is_verified=True)
         db.session.add(admin_user)
         db.session.commit()
         print(f"Admin user created with email: {email} and password: {password}")
-
