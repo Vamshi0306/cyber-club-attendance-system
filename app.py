@@ -20,8 +20,8 @@ app.config['UPLOAD_FOLDER'] = 'static/profile_pics'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # --- SENDGRID CONFIGURATION ---
-SENDGRID_API_KEY = 'YOUR_API_KEY_HERE' # <--- MAKE SURE THIS IS SET
-VERIFIED_SENDER_EMAIL = 'YOUR_VERIFIED_EMAIL@gmail.com' # <--- MAKE SURE THIS IS SET
+SENDGRID_API_KEY = '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' # <--- MAKE SURE THIS IS SET
+VERIFIED_SENDER_EMAIL = 'buddaramvamshidhar@gmail.com' # <--- MAKE SURE THIS IS SET
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -317,3 +317,4 @@ def init_db_command():
         db.session.add(admin_user)
         db.session.commit()
         print(f"Admin user created with email: {email} and password: {password}")
+
