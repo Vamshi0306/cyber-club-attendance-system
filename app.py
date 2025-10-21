@@ -21,8 +21,12 @@ app.config['UPLOAD_FOLDER'] = 'static/profile_pics'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # --- SENDGRID CONFIGURATION ---
-SENDGRID_API_KEY = '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' # <--- MAKE SURE THIS IS SET
-VERIFIED_SENDER_EMAIL = 'buddaramvamshidhar@gmail.com' # <--- MAKE SURE THIS IS SET
+# YOU MUST ADD YOUR KEY HERE. THIS IS THE ONLY WAY.
+SENDGRID_API_KEY = 'SG.S6SGfEuuRq2NjSLp-REjSw.f9a-S51NCeCxeEb1EjP3DzGfx7yRaq0dE9Xnw43OjCM' 
+VERIFIED_SENDER_EMAIL = 'buddaramvamshidhar@gmail.com' # This should be your verified email
+
+# --- YOUR INVITE CODE ---
+SECRET_INVITE_CODE = "CYBERCLUB2025"
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -46,45 +50,24 @@ def send_otp_email(recipient_email, otp, name="User"):
     """
     Sends OTP using SendGrid via raw requests to BYPASS SSL VERIFICATION.
     """
-    
     url = "https://api.sendgrid.com/v3/mail/send"
-    
     headers = {
         "Authorization": f"Bearer {SENDGRID_API_KEY}",
         "Content-Type": "application/json"
     }
-    
     data = {
-        "personalizations": [{
-            "to": [{"email": recipient_email}],
-            "subject": "Your Cyber Club Verification Code"
-        }],
+        "personalizations": [{"to": [{"email": recipient_email}], "subject": "Your Cyber Club Verification Code"}],
         "from": {"email": VERIFIED_SENDER_EMAIL, "name": "Cyber Club Admin"},
-        "content": [{
-            "type": "text/html",
-            "value": f'''
-                <p>Hello {name},</p>
-                <p>Your One-Time Password (OTP) is: <strong>{otp}</strong></p>
-                <p>This code will expire in 10 minutes.</p>
-            '''
-        }]
+        "content": [{"type": "text/html", "value": f'<p>Hello {name},</p><p>Your One-Time Password (OTP) is: <strong>{otp}</strong></p><p>This code will expire in 10 minutes.</p>'}]
     }
-
     try:
-        # This is the critical change: verify=False
-        # We also disable the warnings Python will print about it.
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        
         response = requests.post(url, headers=headers, data=json.dumps(data), verify=False)
-        
-        # Check if SendGrid accepted the request (2xx status code)
         if 200 <= response.status_code < 300:
             return True
         else:
-            # Print the error from SendGrid for debugging
             print(f"Error from SendGrid API: {response.status_code} - {response.text}")
             return False
-            
     except Exception as e:
         print(f"Error sending email: {e}")
         return False
@@ -104,7 +87,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # --- DATABASE MODELS ---
-# (Database models are unchanged)
+# We must add the OTP fields back to the User model
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -115,9 +98,11 @@ class User(db.Model, UserMixin):
     profile_pic = db.Column(db.String(20), nullable=False, default='default.jpg')
     role = db.Column(db.String(10), nullable=False, default='student')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    # --- ADDED BACK ---
     is_verified = db.Column(db.Boolean, nullable=False, default=False)
     otp = db.Column(db.String(6), nullable=True)
     otp_generated_at = db.Column(db.DateTime, nullable=True)
+    # ---
     attendance = db.relationship('Attendance', backref='attendee', lazy=True)
 
 class Event(db.Model):
@@ -136,7 +121,7 @@ class Attendance(db.Model):
 # --- AUTHENTICATION & USER ROUTES ---
 @app.route("/")
 def home():
-    # (No change in this route)
+    # (No change)
     upcoming_events = []
     if current_user.is_authenticated:
         upcoming_events = Event.query.filter(Event.date >= datetime.utcnow()).order_by(Event.date.asc()).all()
@@ -146,7 +131,7 @@ def home():
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
-    # (No change in this route)
+    # ** COMBINED LOGIC **
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     if request.method == 'POST':
@@ -156,29 +141,43 @@ def register():
         branch = request.form.get('branch')
         year = request.form.get('year')
         profile_pic = request.files.get('profile_pic')
+        invite_code = request.form.get('invite_code')
+
+        # 1. Check Invite Code
+        if invite_code != SECRET_INVITE_CODE:
+            flash('Invalid Invite Code. Please ask a club admin for the code.', 'danger')
+            return redirect(url_for('register'))
+
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
-            flash('Email already exists. Please log in or use a different email.', 'danger')
-            return redirect(url_for('register'))
+            flash('Email already exists. Please log in.', 'danger')
+            return redirect(url_for('login'))
+
         picture_file = 'default.jpg'
         if profile_pic:
             picture_file = save_picture(profile_pic)
+
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         otp = secrets.token_hex(3).upper()
+        
+        # 2. Create user with OTP (like before)
         new_user = User(name=name, email=email, password=hashed_password, branch=branch, year=year, profile_pic=picture_file, otp=otp, otp_generated_at=datetime.utcnow())
         db.session.add(new_user)
         db.session.commit()
+        
+        # 3. Send OTP email
         if send_otp_email(email, otp, name):
             flash('Registration successful! Please check your email for a verification code.', 'success')
             return redirect(url_for('verify_otp', email=email))
         else:
             flash('Could not send verification email. Please contact an admin.', 'danger')
             return redirect(url_for('register'))
+
     return render_template('register.html')
 
 @app.route("/verify_otp/<email>", methods=['GET', 'POST'])
 def verify_otp(email):
-    # (No change in this route)
+    # ** ADDED BACK **
     user = User.query.filter_by(email=email).first_or_404()
     if request.method == 'POST':
         entered_otp = request.form.get('otp')
@@ -199,7 +198,7 @@ def verify_otp(email):
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
-    # (No change in this route)
+    # ** OTP LOGIC ADDED BACK **
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     if request.method == 'POST':
@@ -207,6 +206,7 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
         if user and bcrypt.check_password_hash(user.password, password):
+            # Send OTP on every login
             otp = secrets.token_hex(3).upper()
             user.otp = otp
             user.otp_generated_at = datetime.utcnow()
@@ -223,14 +223,14 @@ def login():
 
 @app.route("/logout")
 def logout():
-    # (No change in this route)
+    # (No change)
     logout_user()
     return redirect(url_for('home'))
 
 @app.route("/profile", methods=['GET', 'POST'])
 @login_required
 def profile():
-    # (No change in this route)
+    # (No change)
     if request.method == 'POST':
         current_user.name = request.form.get('name')
         current_user.branch = request.form.get('branch')
@@ -248,7 +248,7 @@ def profile():
 @app.route("/mark_attendance/<int:event_id>")
 @login_required
 def mark_attendance(event_id):
-    # (No change in this route)
+    # (No change)
     event = Event.query.get_or_404(event_id)
     already_marked = Attendance.query.filter_by(user_id=current_user.id, event_id=event.id).first()
     if already_marked:
@@ -261,7 +261,7 @@ def mark_attendance(event_id):
     return redirect(url_for('home'))
     
 # --- ADMIN ROUTES ---
-# (All admin routes are unchanged)
+# (No change)
 @app.route("/admin")
 @login_required
 @admin_required
@@ -302,7 +302,7 @@ def delete_event(event_id):
     return redirect(url_for('admin_dashboard'))
 
 # --- DATA & HELPER ROUTES ---
-# (No change in these routes)
+# (No change)
 @app.route("/attendance-data")
 @login_required
 def attendance_data():
@@ -318,17 +318,11 @@ def init_db_command():
     db.create_all()
     print("Initialized the database.")
     if not User.query.filter_by(role='admin').first():
-        email = 'admin@example.com' 
+        email = 'buddaramvamshidhar@gmail.com' 
         password = 'password'       
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        #
-        # THIS IS THE CORRECTED LINE:
-        #
+        # Admin must be 'is_verified=True' to log in
         admin_user = User(name='Admin', email=email, password=hashed_password, branch='SYSTEM', year=0, role='admin', is_verified=True)
-        #
-        #
-        #
         db.session.add(admin_user)
         db.session.commit()
         print(f"Admin user created with email: {email} and password: {password}")
-
