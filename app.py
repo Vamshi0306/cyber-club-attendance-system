@@ -312,7 +312,6 @@ def attendance_data():
     return jsonify({'attended': attended_count, 'missed': missed_count, 'total': total_events})
 
 # --- CLI COMMAND TO INITIALIZE DB ---
-# (No change in this route)
 @app.cli.command("init-db")
 def init_db_command():
     """Clears the existing data and creates new tables."""
@@ -322,4 +321,13 @@ def init_db_command():
         email = 'admin@example.com' 
         password = 'password'       
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        admin_user = User(name='Admin', email=email, password=hashed_password, branch='SYSTEM', year=0, role='admin', is_verified=T)
+        #
+        # THIS IS THE CORRECTED LINE:
+        #
+        admin_user = User(name='Admin', email=email, password=hashed_password, branch='SYSTEM', year=0, role='admin', is_verified=True)
+        #
+        #
+        #
+        db.session.add(admin_user)
+        db.session.commit()
+        print(f"Admin user created with email: {email} and password: {password}")
