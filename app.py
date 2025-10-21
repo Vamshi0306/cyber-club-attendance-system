@@ -22,7 +22,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # --- SENDGRID CONFIGURATION ---
 # YOU MUST ADD YOUR KEY HERE.
-SENDGRID_API_KEY = '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' 
+SENDGRID_API_KEY = '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' 
 VERIFIED_SENDER_EMAIL = 'buddaramvamshidhar@gmail.com' # This should be your verified email
 
 # --- INVITE CODE REMOVED ---
@@ -306,5 +306,6 @@ def init_db_command():
         db.session.add(admin_user)
         db.session.commit()
         print(f"Admin user created with email: {email} and password: {password}")
+
 
 
