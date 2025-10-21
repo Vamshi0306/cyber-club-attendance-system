@@ -3,3 +3,5 @@ Flask-SQLAlchemy
 Flask-Bcrypt
 Flask-Login
 Pillow
+sendgrid
+requests
