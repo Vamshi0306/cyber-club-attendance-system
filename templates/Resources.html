@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container">
+    <h1 class="mb-4"><i class="fas fa-book-open"></i> Club Resources</h1>
+    <p>Here are some helpful resources, links, and articles posted by the admin.</p>
+    
+    <div class="list-group">
+        {% for resource in resources %}
+        <div class="list-group-item list-group-item-action flex-column align-items-start mb-3">
+            <div class="d-flex w-100 justify-content-between">
+                <h4 class="mb-1">{{ resource.title }}</h4>
+                <small>Posted on: {{ resource.created_at.strftime('%Y-%m-%d') }}</small>
+            </div>
+            <p class="mb-2">{{ resource.description }}</p>
+            {% if resource.link %}
+            <a href="{{ resource.link }}" target="_blank" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> Go to Resource</a>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="list-group-item">
+            <p class="mb-0">No resources have been posted yet. Check back soon!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock content %}
