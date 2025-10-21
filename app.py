@@ -15,8 +15,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['UPLOAD_FOLDER'] = 'static/profile_pics'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# --- NO API KEYS OR INVITE CODES NEEDED ---
-
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
@@ -51,7 +49,6 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # --- DATABASE MODELS ---
-# We re-added 'is_verified' for the admin approval
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -62,8 +59,10 @@ class User(db.Model, UserMixin):
     profile_pic = db.Column(db.String(20), nullable=False, default='default.jpg')
     role = db.Column(db.String(10), nullable=False, default='student')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    is_verified = db.Column(db.Boolean, nullable=False, default=False) # False by default
+    is_verified = db.Column(db.Boolean, nullable=False, default=False)
     attendance = db.relationship('Attendance', backref='attendee', lazy=True)
+    # NEW: Relationship to resources
+    resources = db.relationship('Resource', backref='author', lazy=True)
 
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -78,19 +77,34 @@ class Attendance(db.Model):
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
     marked_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
+# NEW: Resource Database Model
+class Resource(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    link = db.Column(db.String(500), nullable=True) # Allow text-only resources
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
 # --- AUTHENTICATION & USER ROUTES ---
 @app.route("/")
 def home():
-    upcoming_events = []
+    # ** NEW: Admin check **
     if current_user.is_authenticated:
+        # If user is admin, redirect to admin dashboard
+        if current_user.role == 'admin':
+            return redirect(url_for('admin_dashboard'))
+        
+        # If user is a student, show their dashboard
         upcoming_events = Event.query.filter(Event.date >= datetime.utcnow()).order_by(Event.date.asc()).all()
         attended_event_ids = [att.event_id for att in current_user.attendance]
         return render_template('index.html', events=upcoming_events, attended_event_ids=attended_event_ids)
+    
+    # Not logged in
     return render_template('index.html')
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
-    # ** NEW: ADMIN APPROVAL LOGIC **
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     if request.method == 'POST':
@@ -111,8 +125,6 @@ def register():
             picture_file = save_picture(profile_pic)
 
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        
-        # Create user as 'is_verified=False' (pending)
         new_user = User(name=name, email=email, password=hashed_password, branch=branch, year=year, profile_pic=picture_file, is_verified=False)
         db.session.add(new_user)
         db.session.commit()
@@ -124,34 +136,32 @@ def register():
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
-    # ** NEW: CHECK FOR APPROVAL **
     if current_user.is_authenticated:
         return redirect(url_for('home'))
-        
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
 
         if user and bcrypt.check_password_hash(user.password, password):
-            # NEW CHECK: Is the user approved?
             if not user.is_verified:
                 flash('Your account is still pending admin approval. Please wait.', 'warning')
                 return redirect(url_for('login'))
             
-            # User is approved, log them in
             login_user(user, remember=True)
             flash('Login successful!', 'success')
-            return redirect(url_for('home'))
+            return redirect(url_for('home')) # This will redirect to admin_dashboard if user is admin
         else:
             flash('Login unsuccessful. Please check email and password.', 'danger')
             
     return render_template('login.html')
 
+# This route is now fixed because layout.html will be fixed
 @app.route("/logout")
 def logout():
     logout_user()
-    return redirect(url_for('home'))
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('login'))
 
 @app.route("/profile", methods=['GET', 'POST'])
 @login_required
@@ -168,6 +178,13 @@ def profile():
         return redirect(url_for('profile'))
     image_file = url_for('static', filename=f'profile_pics/{current_user.profile_pic}')
     return render_template('profile.html', user=current_user, image_file=image_file)
+
+# --- NEW: Resources Page ---
+@app.route("/resources")
+@login_required
+def resources():
+    all_resources = Resource.query.order_by(Resource.created_at.desc()).all()
+    return render_template('resources.html', resources=all_resources)
 
 # --- ATTENDANCE ROUTES ---
 @app.route("/mark_attendance/<int:event_id>")
@@ -189,20 +206,19 @@ def mark_attendance(event_id):
 @login_required
 @admin_required
 def admin_dashboard():
-    # NEW: Get pending users
     pending_users = User.query.filter_by(is_verified=False, role='student').order_by(User.created_at.desc()).all()
-    
     total_students = User.query.filter_by(role='student', is_verified=True).count()
     total_events = Event.query.count()
     total_attendance = Attendance.query.count()
-    students = User.query.filter_by(role='student', is_verified=True).order_by(User.name).all()
     events = Event.query.order_by(Event.date.desc()).all()
+    # NEW: Get resources
+    all_resources = Resource.query.order_by(Resource.created_at.desc()).all()
     
-    return render_template('admin.html', students=students, events=events, 
-                           pending_users=pending_users, # Pass pending users to template
+    return render_template('admin.html', events=events, 
+                           pending_users=pending_users,
+                           all_resources=all_resources, # Pass resources
                            total_students=total_students, total_events=total_events, total_attendance=total_attendance)
 
-# NEW: Route to approve a user
 @app.route("/admin/approve/<int:user_id>")
 @login_required
 @admin_required
@@ -213,18 +229,16 @@ def approve_user(user_id):
     flash(f"User {user.name} has been approved.", "success")
     return redirect(url_for('admin_dashboard'))
 
-# NEW: Route to deny (delete) a user
 @app.route("/admin/deny/<int:user_id>")
 @login_required
 @admin_required
 def deny_user(user_id):
     user = User.query.get_or_404(user_id)
-    # Delete profile picture if it's not the default
     if user.profile_pic != 'default.jpg':
         try:
             os.remove(os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], user.profile_pic))
         except FileNotFoundError:
-            pass # Ignore if pic is already missing
+            pass 
     db.session.delete(user)
     db.session.commit()
     flash(f"User {user.name} has been denied and deleted.", "success")
@@ -257,6 +271,33 @@ def delete_event(event_id):
     flash('Event and all its attendance records have been deleted!', 'success')
     return redirect(url_for('admin_dashboard'))
 
+# --- NEW: Resource Management Routes ---
+@app.route("/admin/resource/add", methods=['GET', 'POST'])
+@login_required
+@admin_required
+def add_resource():
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        link = request.form.get('link')
+        
+        new_resource = Resource(title=title, description=description, link=link, author=current_user)
+        db.session.add(new_resource)
+        db.session.commit()
+        flash('New resource has been added!', 'success')
+        return redirect(url_for('admin_dashboard'))
+    return render_template('add_resource.html')
+
+@app.route("/admin/resource/<int:resource_id>/delete", methods=['POST'])
+@login_required
+@admin_required
+def delete_resource(resource_id):
+    resource = Resource.query.get_or_404(resource_id)
+    db.session.delete(resource)
+    db.session.commit()
+    flash('Resource has been deleted.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
 # --- DATA & HELPER ROUTES ---
 @app.route("/attendance-data")
 @login_required
@@ -276,7 +317,6 @@ def init_db_command():
         email = 'buddaramvamshidhar@gmail.com' 
         password = 'password'       
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        # Admin must be 'is_verified=True' to be able to log in
         admin_user = User(name='Admin', email=email, password=hashed_password, branch='SYSTEM', year=0, role='admin', is_verified=True)
         db.session.add(admin_user)
         db.session.commit()
