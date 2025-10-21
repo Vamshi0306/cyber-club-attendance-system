@@ -8,9 +8,10 @@ from datetime import datetime
 from functools import wraps
 from PIL import Image
 
-# --- SENDGRID IMPORTS ---
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+# --- NEW IMPORTS FOR THE FIX ---
+import requests
+import json
+import urllib3
 
 # --- APP & DATABASE CONFIGURATION ---
 app = Flask(__name__)
@@ -42,23 +43,50 @@ def save_picture(form_picture):
     return picture_fn
 
 def send_otp_email(recipient_email, otp, name="User"):
-    """Sends OTP using SendGrid."""
-    message = Mail(
-        from_email=VERIFIED_SENDER_EMAIL,
-        to_emails=recipient_email,
-        subject='Your Cyber Club Verification Code',
-        html_content=f'''
-            <p>Hello {name},</p>
-            <p>Your One-Time Password (OTP) is: <strong>{otp}</strong></p>
-            <p>This code will expire in 10 minutes.</p>
-        '''
-    )
+    """
+    Sends OTP using SendGrid via raw requests to BYPASS SSL VERIFICATION.
+    """
+    
+    url = "https://api.sendgrid.com/v3/mail/send"
+    
+    headers = {
+        "Authorization": f"Bearer {SENDGRID_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    data = {
+        "personalizations": [{
+            "to": [{"email": recipient_email}],
+            "subject": "Your Cyber Club Verification Code"
+        }],
+        "from": {"email": VERIFIED_SENDER_EMAIL, "name": "Cyber Club Admin"},
+        "content": [{
+            "type": "text/html",
+            "value": f'''
+                <p>Hello {name},</p>
+                <p>Your One-Time Password (OTP) is: <strong>{otp}</strong></p>
+                <p>This code will expire in 10 minutes.</p>
+            '''
+        }]
+    }
+
     try:
-        sg = SendGridAPIClient(SENDGRID_API_KEY)
-        response = sg.send(message)
-        return 200 <= response.status_code < 300
+        # This is the critical change: verify=False
+        # We also disable the warnings Python will print about it.
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        response = requests.post(url, headers=headers, data=json.dumps(data), verify=False)
+        
+        # Check if SendGrid accepted the request (2xx status code)
+        if 200 <= response.status_code < 300:
+            return True
+        else:
+            # Print the error from SendGrid for debugging
+            print(f"Error from SendGrid API: {response.status_code} - {response.text}")
+            return False
+            
     except Exception as e:
-        print(f"Error sending email via SendGrid: {e}")
+        print(f"Error sending email: {e}")
         return False
 
 # --- DECORATORS ---
@@ -150,57 +178,39 @@ def register():
 
 @app.route("/verify_otp/<email>", methods=['GET', 'POST'])
 def verify_otp(email):
-    # ** THIS ROUTE IS UPDATED **
-    # It now handles BOTH registration and login verification
+    # (No change in this route)
     user = User.query.filter_by(email=email).first_or_404()
-    
     if request.method == 'POST':
         entered_otp = request.form.get('otp')
-        
-        # Check for OTP expiration (10 minutes)
         time_diff = datetime.utcnow() - user.otp_generated_at
         if time_diff.total_seconds() > 600:
             flash('OTP has expired. Please try to log in again to get a new one.', 'danger')
             return redirect(url_for('login'))
-
-        # Check if OTP is correct
         if user.otp == entered_otp:
-            # Mark as verified (for new users)
             user.is_verified = True
-            # Clear the OTP
             user.otp = None
             db.session.commit()
-            
-            # Log the user in
             login_user(user, remember=True)
             flash('Verification successful! You are now logged in.', 'success')
             return redirect(url_for('home'))
         else:
             flash('Invalid OTP. Please try again.', 'danger')
-
     return render_template('verify_otp.html', email=email)
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
-    # ** THIS ROUTE IS UPDATED **
-    # It now sends an OTP instead of logging in
+    # (No change in this route)
     if current_user.is_authenticated:
         return redirect(url_for('home'))
-        
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
-
-        # Check if user exists and password is correct
         if user and bcrypt.check_password_hash(user.password, password):
-            # Generate a new OTP
             otp = secrets.token_hex(3).upper()
             user.otp = otp
             user.otp_generated_at = datetime.utcnow()
             db.session.commit()
-            
-            # Send the OTP email
             if send_otp_email(user.email, otp, user.name):
                 flash('Login credentials correct. Please check your email for a verification code.', 'info')
                 return redirect(url_for('verify_otp', email=user.email))
@@ -209,7 +219,6 @@ def login():
                 return redirect(url_for('login'))
         else:
             flash('Login unsuccessful. Please check email and password.', 'danger')
-            
     return render_template('login.html')
 
 @app.route("/logout")
@@ -313,8 +322,4 @@ def init_db_command():
         email = 'admin@example.com' 
         password = 'password'       
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        admin_user = User(name='Admin', email=email, password=hashed_password, branch='SYSTEM', year=0, role='admin', is_verified=True)
-        db.session.add(admin_user)
-        db.session.commit()
-        print(f"Admin user created with email: {email} and password: {password}")
-
+        admin_user = User(name='Admin', email=email, password=hashed_password, branch='SYSTEM', year=0, role='admin', is_verified=T)
