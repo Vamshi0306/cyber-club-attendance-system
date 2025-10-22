@@ -61,7 +61,6 @@ class User(db.Model, UserMixin):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     is_verified = db.Column(db.Boolean, nullable=False, default=False)
     attendance = db.relationship('Attendance', backref='attendee', lazy=True)
-    # NEW: Relationship to resources
     resources = db.relationship('Resource', backref='author', lazy=True)
 
 class Event(db.Model):
@@ -77,30 +76,25 @@ class Attendance(db.Model):
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
     marked_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
-# NEW: Resource Database Model
 class Resource(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    link = db.Column(db.String(500), nullable=True) # Allow text-only resources
+    link = db.Column(db.String(500), nullable=True) 
     created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
 # --- AUTHENTICATION & USER ROUTES ---
 @app.route("/")
 def home():
-    # ** NEW: Admin check **
     if current_user.is_authenticated:
-        # If user is admin, redirect to admin dashboard
         if current_user.role == 'admin':
             return redirect(url_for('admin_dashboard'))
         
-        # If user is a student, show their dashboard
         upcoming_events = Event.query.filter(Event.date >= datetime.utcnow()).order_by(Event.date.asc()).all()
         attended_event_ids = [att.event_id for att in current_user.attendance]
         return render_template('index.html', events=upcoming_events, attended_event_ids=attended_event_ids)
     
-    # Not logged in
     return render_template('index.html')
 
 @app.route("/register", methods=['GET', 'POST'])
@@ -150,13 +144,12 @@ def login():
             
             login_user(user, remember=True)
             flash('Login successful!', 'success')
-            return redirect(url_for('home')) # This will redirect to admin_dashboard if user is admin
+            return redirect(url_for('home'))
         else:
             flash('Login unsuccessful. Please check email and password.', 'danger')
             
     return render_template('login.html')
 
-# This route is now fixed because layout.html will be fixed
 @app.route("/logout")
 def logout():
     logout_user()
@@ -179,7 +172,6 @@ def profile():
     image_file = url_for('static', filename=f'profile_pics/{current_user.profile_pic}')
     return render_template('profile.html', user=current_user, image_file=image_file)
 
-# --- NEW: Resources Page ---
 @app.route("/resources")
 @login_required
 def resources():
@@ -211,13 +203,31 @@ def admin_dashboard():
     total_events = Event.query.count()
     total_attendance = Attendance.query.count()
     events = Event.query.order_by(Event.date.desc()).all()
-    # NEW: Get resources
     all_resources = Resource.query.order_by(Resource.created_at.desc()).all()
     
     return render_template('admin.html', events=events, 
                            pending_users=pending_users,
-                           all_resources=all_resources, # Pass resources
+                           all_resources=all_resources, 
                            total_students=total_students, total_events=total_events, total_attendance=total_attendance)
+
+# ** NEW: Zoho-Style Event Report Route **
+@app.route("/admin/event_report/<int:event_id>")
+@login_required
+@admin_required
+def event_report(event_id):
+    event = Event.query.get_or_404(event_id)
+    
+    # Get all approved students
+    all_students = User.query.filter_by(role='student', is_verified=True).all()
+    
+    # Get IDs of students who attended this specific event
+    attendee_ids = [a.user_id for a in event.attendance]
+    
+    # Create the two lists
+    attendees = [student for student in all_students if student.id in attendee_ids]
+    absentees = [student for student in all_students if student.id not in attendee_ids]
+    
+    return render_template('event_report.html', event=event, attendees=attendees, absentees=absentees)
 
 @app.route("/admin/approve/<int:user_id>")
 @login_required
@@ -271,7 +281,6 @@ def delete_event(event_id):
     flash('Event and all its attendance records have been deleted!', 'success')
     return redirect(url_for('admin_dashboard'))
 
-# --- NEW: Resource Management Routes ---
 @app.route("/admin/resource/add", methods=['GET', 'POST'])
 @login_required
 @admin_required
