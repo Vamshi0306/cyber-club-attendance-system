@@ -1,0 +1,7 @@
+# Local database
+instance/
+site.db
+
+# Python cache
+__pycache__/
+*.pyc
