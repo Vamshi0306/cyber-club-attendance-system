@@ -323,10 +323,11 @@ def init_db_command():
     db.create_all()
     print("Initialized the database.")
     if not User.query.filter_by(role='admin').first():
-        email = 'buddaramvamshidhar@gmail.com' 
+        email = 'admin_cyberclub@gmail.com' 
         password = 'password'       
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         admin_user = User(name='Admin', email=email, password=hashed_password, branch='SYSTEM', year=0, role='admin', is_verified=True)
         db.session.add(admin_user)
         db.session.commit()
         print(f"Admin user created with email: {email} and password: {password}")
+
