@@ -1,0 +1,86 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container">
+    <h1 class="mb-2">Event Report: "{{ event.title }}"</h1>
+    <p class="text-muted">Held on: {{ event.date.strftime('%A, %B %d, %Y') }}</p>
+
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h3 class="card-title">Attendance Stats</h3>
+                    <canvas id="eventPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-7">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h4><i class="fas fa-check-circle"></i> Attendees ({{ attendees|length }})</h4>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for user in attendees %}
+                    <li class="list-group-item d-flex align-items-center">
+                        <img src="{{ url_for('static', filename='profile_pics/' + user.profile_pic) }}" class="rounded-circle me-2" height="30" width="30" style="object-fit: cover;">
+                        {{ user.name }}
+                    </li>
+                    {% else %}
+                    <li class="list-group-item">No students attended.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4><i class="fas fa-times-circle"></i> Absentees ({{ absentees|length }})</h4>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for user in absentees %}
+                    <li class="list-group-item d-flex align-items-center">
+                        <img src="{{ url_for('static', filename='profile_pics/' + user.profile_pic) }}" class="rounded-circle me-2" height="30" width="30" style="object-fit: cover;">
+                        {{ user.name }}
+                    </li>
+                    {% else %}
+                    <li class="list-group-item">All approved students attended!</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Data for the pie chart
+    const attendedCount = {{ attendees|length }};
+    const absenteedCount = {{ absentees|length }};
+
+    const ctx = document.getElementById('eventPieChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Attended', 'Absent'],
+            datasets: [{
+                label: 'Event Attendance',
+                data: [attendedCount, absenteedCount],
+                backgroundColor: ['#28a745', '#dc3545'], // Success (Green) and Danger (Red)
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: 'white' // Text color for the legend
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock scripts %}
