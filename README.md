@@ -2,8 +2,7 @@
 
 A full-stack web application built with Python and Flask for managing club members, events, and attendance. This project features a secure "Admin Approval" system for new members, a student dashboard with attendance tracking, and an admin-only control panel for managing all aspects of the club.
 
-![App Screenshot](https://i.imgur.com/your-screenshot-url.png)
-*(Suggestion: Take a screenshot of your app, upload it to a site like [Imgur](https://imgur.com/), and paste the link here.)*
+
 
 ---
 
