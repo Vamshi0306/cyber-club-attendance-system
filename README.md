@@ -12,7 +12,7 @@ A full-stack web application built with Python and Flask for managing club membe
 * **Secure Admin Approval:** New users can register, but their accounts are "pending" until an admin approves them.
 * **Student Dashboard:** Students see a list of upcoming events and can mark their attendance with a single click.
 * **Attendance Tracking:** The dashboard shows a bar graph of the student's personal attendance (attended vs. missed).
-* **Admin Control Panel:** A "Zoho-style" dashboard for the admin to:
+* **Admin Control Panel:** A dashboard for the admin to:
     * Approve or Deny pending members.
     * View all approved students.
     * Create, manage, and delete events.
