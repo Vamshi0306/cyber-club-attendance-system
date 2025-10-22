@@ -4,6 +4,9 @@ A full-stack web application built with Python and Flask for managing club membe
 
 
 
+APPLICATION SCREENSHOT:
+![Image](https://github.com/user-attachments/assets/e6f0ee5c-92aa-4e82-92d1-ab3a4cebecdb)
+
 ---
 
 ## 🚀 Core Features
