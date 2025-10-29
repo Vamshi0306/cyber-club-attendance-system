@@ -17,7 +17,6 @@
             background-color: #f8f9fa; /* Light gray background */
             color: #202124; /* Dark gray text */
         }
-
         /* Navbar Style */
         .navbar {
             background-color: #ffffff; /* White navbar */
@@ -27,7 +26,6 @@
         .navbar-brand img { margin-right: 8px; }
         .nav-link { color: #5f6368 !important; } /* Google gray for links */
         .nav-link:hover { color: #1a73e8 !important; } /* Google blue on hover */
-
         /* Card Style */
         .card {
             border: 1px solid #dee2e6;
@@ -40,8 +38,7 @@
              border-bottom: 1px solid #dee2e6;
              font-weight: 500;
         }
-
-        /* Button Style - Like the image */
+        /* Button Style */
         .btn-primary {
             background-color: #1a73e8; /* Google Blue */
             border-color: #1a73e8;
@@ -56,20 +53,17 @@
             border-color: #185abc;
             box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15); /* Stronger shadow on hover */
         }
-        /* Style other buttons similarly */
         .btn-success { background-color: #1e8e3e; border-color: #1e8e3e; border-radius: 99px; }
         .btn-danger { background-color: #d93025; border-color: #d93025; border-radius: 99px; }
-        .btn-info { background-color: #1a73e8; border-color: #1a73e8; border-radius: 99px; } /* Use blue for info */
+        .btn-info { background-color: #1a73e8; border-color: #1a73e8; border-radius: 99px; }
         .btn-secondary { background-color: #dadce0; border-color: #dadce0; color: #3c4043; border-radius: 99px; }
-
-        /* Alert Styles - Remove bright green/red */
+        /* Alert Styles */
         .alert { border-radius: 8px; }
-        .alert-success { background-color: #e6f4ea; color: #1e8e3e; border-color: #c6ead7; } /* Lighter green */
-        .alert-danger { background-color: #fce8e6; color: #d93025; border-color: #f7cac9; } /* Lighter red */
-        .alert-info { background-color: #e8f0fe; color: #1967d2; border-color: #d2e3fc; } /* Lighter blue */
-        .alert-warning { background-color: #fff0c6; color: #d07400; border-color: #ffe08b;} /* Lighter yellow/orange */
-
-        /* Optional: Transparent background logo - might clash with light theme */
+        .alert-success { background-color: #e6f4ea; color: #1e8e3e; border-color: #c6ead7; }
+        .alert-danger { background-color: #fce8e6; color: #d93025; border-color: #f7cac9; }
+        .alert-info { background-color: #e8f0fe; color: #1967d2; border-color: #d2e3fc; }
+        .alert-warning { background-color: #fff0c6; color: #d07400; border-color: #ffe08b;}
+        /* Optional: Transparent background logo */
          body::before {
             content: "";
             position: fixed; top: 0; left: 0;
@@ -136,3 +130,4 @@
     {% block scripts %}{% endblock %}
 </body>
 </html>
+
