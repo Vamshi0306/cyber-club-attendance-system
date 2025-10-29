@@ -4,7 +4,7 @@
     <div class="card p-4">
         <form method="POST" action="" enctype="multipart/form-data">
             <fieldset class="form-group">
-                <legend class="border-bottom mb-4">Join Today</legend>
+                <legend class="border-bottom mb-4 text-center">Join Cyber Club</legend>
                 <div class="form-group mb-3">
                     <label class="form-label" for="profile_pic">Profile Picture</label>
                     <input type="file" class="form-control" id="profile_pic" name="profile_pic" accept="image/png, image/jpeg, image/jpg" required>
@@ -16,6 +16,10 @@
                 <div class="form-group mb-3">
                     <label class="form-label" for="email">Email address</label>
                     <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label" for="roll_number">Roll Number</label>
+                    <input type="text" class="form-control" id="roll_number" name="roll_number" required>
                 </div>
                 <div class="form-group mb-3">
                     <label class="form-label" for="password">Password</label>
@@ -33,12 +37,12 @@
                     <input type="number" class="form-control" id="year" name="year" required min="1" max="4">
                 </div>
             </fieldset>
-            <div class="form-group mt-4">
-                <button class="btn btn-primary w-100" type="submit">Register</button>
+            <div class="form-group mt-4 text-center">
+                <button class="btn btn-primary" type="submit">Register & Verify Email</button>
             </div>
         </form>
-        <div class="border-top pt-3 mt-3">
-            <small>Already Have An Account? <a href="{{ url_for('login') }}">Sign In</a></small>
+        <div class="text-center border-top pt-3 mt-3">
+            <small class="text-muted">Already Have An Account? <a href="{{ url_for('login') }}">Sign In</a></small>
         </div>
     </div>
 </div>
