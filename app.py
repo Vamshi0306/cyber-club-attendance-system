@@ -22,7 +22,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # --- SENDGRID CONFIGURATION ---
 # !!! YOUR CREDENTIALS INSERTED HERE !!!
-SENDGRID_API_KEY = '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'
+SENDGRID_API_KEY = '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'
 VERIFIED_SENDER_EMAIL = 'buddaramvamshidhar06@gmail.com'
 
 db = SQLAlchemy(app)
@@ -425,6 +425,7 @@ def init_db_command():
             admin.is_verified = True
             db.session.commit()
             print(f"Ensured admin user {admin_email} is verified.")
+
 
 
 
