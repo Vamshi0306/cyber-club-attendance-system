@@ -3,51 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://bootswatch.com/5/cyborg/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <title>Cyber Club</title>
-    
+
     <style>
-        /* Low-transparency background logo */
-        body::before {
+        /* --- Google Style Customizations --- */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa; /* Light gray background */
+            color: #202124; /* Dark gray text */
+        }
+
+        /* Navbar Style */
+        .navbar {
+            background-color: #ffffff; /* White navbar */
+            border-bottom: 1px solid #dee2e6; /* Subtle border */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-brand img { margin-right: 8px; }
+        .nav-link { color: #5f6368 !important; } /* Google gray for links */
+        .nav-link:hover { color: #1a73e8 !important; } /* Google blue on hover */
+
+        /* Card Style */
+        .card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px; /* Slightly rounded corners */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            background-color: #ffffff;
+        }
+        .card-header {
+             background-color: #f8f9fa; /* Light header */
+             border-bottom: 1px solid #dee2e6;
+             font-weight: 500;
+        }
+
+        /* Button Style - Like the image */
+        .btn-primary {
+            background-color: #1a73e8; /* Google Blue */
+            border-color: #1a73e8;
+            border-radius: 99px; /* Fully rounded */
+            padding: 8px 24px;
+            font-weight: 500;
+            transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15); /* Subtle shadow */
+        }
+        .btn-primary:hover {
+            background-color: #185abc; /* Darker blue on hover */
+            border-color: #185abc;
+            box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15); /* Stronger shadow on hover */
+        }
+        /* Style other buttons similarly */
+        .btn-success { background-color: #1e8e3e; border-color: #1e8e3e; border-radius: 99px; }
+        .btn-danger { background-color: #d93025; border-color: #d93025; border-radius: 99px; }
+        .btn-info { background-color: #1a73e8; border-color: #1a73e8; border-radius: 99px; } /* Use blue for info */
+        .btn-secondary { background-color: #dadce0; border-color: #dadce0; color: #3c4043; border-radius: 99px; }
+
+        /* Alert Styles - Remove bright green/red */
+        .alert { border-radius: 8px; }
+        .alert-success { background-color: #e6f4ea; color: #1e8e3e; border-color: #c6ead7; } /* Lighter green */
+        .alert-danger { background-color: #fce8e6; color: #d93025; border-color: #f7cac9; } /* Lighter red */
+        .alert-info { background-color: #e8f0fe; color: #1967d2; border-color: #d2e3fc; } /* Lighter blue */
+        .alert-warning { background-color: #fff0c6; color: #d07400; border-color: #ffe08b;} /* Lighter yellow/orange */
+
+        /* Optional: Transparent background logo - might clash with light theme */
+         body::before {
             content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
             background-image: url("{{ url_for('static', filename='images/logo.jpg') }}");
             background-repeat: no-repeat;
             background-position: center center;
             background-attachment: fixed;
             background-size: contain;
-            opacity: 0.05; 
+            opacity: 0.03; /* Very low opacity */
             z-index: -1;
-        }
-
-        /* Creative Button Style */
-        .btn {
-            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-            transition: all 0.2s ease-in-out;
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px 0 rgba(0,0,0,0.3);
-        }
+         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
+    <nav class="navbar navbar-expand-lg navbar-light"> <div class="container">
             <a class="navbar-brand" href="{{ url_for('home') }}">
                 <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Cyber Club Logo" width="30" height="30" class="d-inline-block align-top rounded-circle">
                 Cyber Club
             </a>
-            
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
             <div class="collapse navbar-collapse" id="navbarNav">
                 <div class="navbar-nav ms-auto align-items-center">
                     {% if current_user.is_authenticated %}
@@ -55,10 +100,8 @@
                             <a class="nav-link" href="{{ url_for('admin_dashboard') }}"><i class="fas fa-user-shield"></i> Admin Panel</a>
                         {% endif %}
                         <a class="nav-link" href="{{ url_for('resources') }}"><i class="fas fa-book-open"></i> Resources</a>
-
                         <a class="nav-link" href="{{ url_for('profile') }}">
-                            <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_pic) }}" class="rounded-circle" height="30" width="30" style="object-fit: cover;">
-                            Profile
+                            <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_pic) }}" class="rounded-circle" height="30" width="30" style="object-fit: cover; border: 1px solid #dadce0;"> Profile
                         </a>
                         <a class="nav-link" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     {% else %}
@@ -81,9 +124,13 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        
         {% block content %}{% endblock %}
     </main>
+
+    <footer class="container text-center mt-5 mb-3 text-muted">
+        <small>&copy; {{ now().year }} Cyber Club</small>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     {% block scripts %}{% endblock %}
