@@ -3,59 +3,29 @@
 <div class="container">
     <h1 class="mb-4"><i class="fas fa-user-shield"></i> Admin Control Panel</h1>
 
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3><i class="fas fa-user-clock"></i> Pending Approvals</h3>
-        </div>
-        <div class="card-body">
-            {% if pending_users %}
-                <ul class="list-group">
-                    {% for user in pending_users %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <img src="{{ url_for('static', filename='profile_pics/' + user.profile_pic) }}" class="rounded-circle me-2" height="40" width="40" style="object-fit: cover;">
-                            <strong>{{ user.name }}</strong> ({{ user.email }})
-                            <small class="text-muted d-block">Registered on: {{ user.created_at.strftime('%Y-%m-%d') }}</small>
-                        </div>
-                        <div>
-                            <a href="{{ url_for('approve_user', user_id=user.id) }}" class="btn btn-success btn-sm me-2"><i class="fas fa-check"></i> Approve</a>
-                            <a href="{{ url_for('deny_user', user_id=user.id) }}" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Deny</a>
-                        </div>
-                    </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p class="mb-0">No new users are pending approval.</p>
-            {% endif %}
-        </div>
-    </div>
-
     <div class="row mb-4">
         <div class="col-md-4">
-            <div class="card text-white bg-primary p-3">
-                <h4><i class="fas fa-users"></i> Approved Students</h4>
+            <div class="card text-white bg-primary p-3 shadow-sm"> <h4><i class="fas fa-users"></i> Students</h4>
                 <h2 class="display-4">{{ total_students }}</h2>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-white bg-info p-3">
-                <h4><i class="fas fa-calendar-alt"></i> Total Events</h4>
+            <div class="card text-dark bg-light p-3 shadow-sm"> <h4><i class="fas fa-calendar-alt"></i> Events</h4>
                 <h2 class="display-4">{{ total_events }}</h2>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-white bg-success p-3">
-                <h4><i class="fas fa-check-circle"></i> Total Attendance</h4>
+            <div class="card text-dark bg-light p-3 shadow-sm"> <h4><i class="fas fa-check-circle"></i> Attendance Records</h4>
                 <h2 class="display-4">{{ total_attendance }}</h2>
             </div>
         </div>
     </div>
 
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-6 mb-4">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3><i class="fas fa-calendar-check"></i> Manage Events</h3>
+                    <h3><i class="fas fa-calendar-check"></i> Events</h3>
                     <a href="{{ url_for('add_event') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Event</a>
                 </div>
                 <div class="list-group list-group-flush">
@@ -63,22 +33,21 @@
                     <a href="{{ url_for('event_report', event_id=event.id) }}" class="list-group-item list-group-item-action">
                         <div class="d-flex w-100 justify-content-between">
                             <h5 class="mb-1">{{ event.title }}</h5>
-                            <small>{{ event.date.strftime('%Y-%m-%d') }}</small>
+                            <small class="text-muted">{{ event.date.strftime('%Y-%m-%d') }}</small>
                         </div>
-                        <p class="mb-1">{{ event.description }}</p>
-                        <span class="badge bg-success rounded-pill">{{ event.attendance|length }} Attended</span>
-                    </a>
+                        <p class="mb-1 text-muted">{{ event.description }}</p>
+                        <span class="badge bg-secondary rounded-pill">{{ event.attendance|length }} Attended</span> </a>
                     {% else %}
                     <div class="list-group-item">No events found.</div>
                     {% endfor %}
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-6">
+
+        <div class="col-md-6 mb-4">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3><i class="fas fa-book-open"></i> Manage Resources</h3>
+                    <h3><i class="fas fa-book-open"></i> Resources</h3>
                     <a href="{{ url_for('add_resource') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Resource</a>
                 </div>
                 <div class="list-group list-group-flush">
@@ -86,14 +55,12 @@
                     <div class="list-group-item">
                         <div class="d-flex w-100 justify-content-between">
                             <h5 class="mb-1">{{ resource.title }}</h5>
-                            <small>{{ resource.created_at.strftime('%Y-%m-%d') }}</Bsmall>
+                            <small class="text-muted">{{ resource.created_at.strftime('%Y-%m-%d') }}</small>
                         </div>
-                        <p class="mb-1">{{ resource.description }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <a href="{{ resource.link }}" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-link"></i> View Link</a>
-                            <form action="{{ url_for('delete_resource', resource_id=resource.id) }}" method="POST" onsubmit="return confirm('Are you sure?');">
-                                <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
-                            </form>
+                        <p class="mb-1 text-muted">{{ resource.description }}</p>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <a href="{{ resource.link }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-link"></i> View Link</a> <form action="{{ url_for('delete_resource', resource_id=resource.id) }}" method="POST" onsubmit="return confirm('Are you sure?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button> </form>
                         </div>
                     </div>
                     {% else %}
@@ -102,6 +69,25 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
-{% endblock content %}
+
+         <div class="col-md-12 mb-4">
+             <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-user-graduate"></i> Approved Students</h3>
+                </div>
+                 <ul class="list-group list-group-flush">
+                     {% for student in approved_students %}
+                     <li class="list-group-item d-flex justify-content-between align-items-center">
+                         <div>
+                             <img src="{{ url_for('static', filename='profile_pics/' + student.profile_pic) }}" class="rounded-circle me-2" height="30" width="30" style="object-fit: cover;">
+                             {{ student.name }} <small class="text-muted">({{ student.email }} / {{ student.roll_number }})</small> </div>
+                         <span class="badge bg-secondary rounded-pill">{{ student.attendance|length }} Sessions Attended</span>
+                     </li>
+                     {% else %}
+                     <li class="list-group-item">No approved students yet.</li>
+                     {% endfor %}
+                 </ul>
+             </div>
+        </div>
+
+    </div> </div> {% endblock content %}
