@@ -7,29 +7,42 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, curren
 from datetime import datetime
 from functools import wraps
 from PIL import Image
-
-# --- Imports for SendGrid/Email Fix ---
 import requests
 import json
 import urllib3
+from dotenv import load_dotenv # Import dotenv
+
+# --- LOAD ENVIRONMENT VARIABLES ---
+load_dotenv() # Load variables from .env file
 
 # --- APP & DATABASE CONFIGURATION ---
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'a_very_secret_key_change_this'
+
+# --- Load secrets securely from environment variables ---
+# Use os.environ.get() to read the variables set in your .env file
+# Provide a default value only for development if the variable isn't set
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'you-should-really-set-a-secret-key-in-.env')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['UPLOAD_FOLDER'] = 'static/profile_pics'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # --- SENDGRID CONFIGURATION ---
-# !!! YOUR CREDENTIALS INSERTED HERE !!!
-SENDGRID_API_KEY = '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'
-VERIFIED_SENDER_EMAIL = 'buddaramvamshidhar06@gmail.com'
+# Load secrets from environment variables
+SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
+VERIFIED_SENDER_EMAIL = os.environ.get('VERIFIED_SENDER_EMAIL')
+
+# Check if SendGrid keys are loaded (important for debugging)
+if not SENDGRID_API_KEY:
+    print("FATAL ERROR: SENDGRID_API_KEY environment variable not set!")
+    # In a real app, you might exit or disable email functionality here
+if not VERIFIED_SENDER_EMAIL:
+    print("FATAL ERROR: VERIFIED_SENDER_EMAIL environment variable not set!")
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-login_manager.login_message_category = 'info' # Use Bootstrap 'info' class for messages
+login_manager.login_message_category = 'info'
 
 # --- HELPER FUNCTIONS ---
 def save_picture(form_picture):
@@ -37,7 +50,6 @@ def save_picture(form_picture):
     _, f_ext = os.path.splitext(form_picture.filename)
     picture_fn = random_hex + f_ext
     picture_path = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], picture_fn)
-
     output_size = (125, 125)
     i = Image.open(form_picture)
     i.thumbnail(output_size)
@@ -46,6 +58,10 @@ def save_picture(form_picture):
 
 def send_otp_email(recipient_email, otp, name="User"):
     """Sends OTP using SendGrid via raw requests to BYPASS SSL VERIFICATION."""
+    if not SENDGRID_API_KEY or not VERIFIED_SENDER_EMAIL:
+        print("ERROR: Cannot send email. SendGrid API Key or Sender Email is missing.")
+        return False # Prevent sending if keys are missing
+
     url = "https://api.sendgrid.com/v3/mail/send"
     headers = {
         "Authorization": f"Bearer {SENDGRID_API_KEY}",
@@ -58,7 +74,7 @@ def send_otp_email(recipient_email, otp, name="User"):
             <p>Hello {name},</p>
             <p>Your One-Time Password (OTP) is: <strong>{otp}</strong></p>
             <p>This code will expire in 10 minutes.</p>
-        '''}] # Make sure the closing ''' are on the same line as }]
+        '''}]
     }
     try:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -72,19 +88,17 @@ def send_otp_email(recipient_email, otp, name="User"):
         print(f"Error sending email: {e}")
         return False
 
-
 # --- DECORATORS ---
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or current_user.role != 'admin':
-            flash("You do not have permission to access this page.", "warning") # Changed to warning
+            flash("You do not have permission to access this page.", "warning")
             return redirect(url_for('home'))
         return f(*args, **kwargs)
     return decorated_function
 
 # --- CONTEXT PROCESSOR ---
-# Makes 'now' available in all templates for the current year
 @app.context_processor
 def inject_now():
     return {'now': datetime.utcnow}
@@ -141,7 +155,7 @@ def home():
         upcoming_events = Event.query.filter(Event.date >= datetime.utcnow()).order_by(Event.date.asc()).all()
         attended_event_ids = [att.event_id for att in current_user.attendance]
         return render_template('index.html', events=upcoming_events, attended_event_ids=attended_event_ids)
-    return render_template('index.html') # Show basic landing page if not logged in
+    return render_template('index.html')
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
@@ -150,7 +164,7 @@ def register():
     if request.method == 'POST':
         name = request.form.get('name')
         email = request.form.get('email')
-        roll_number = request.form.get('roll_number') # Get roll number
+        roll_number = request.form.get('roll_number')
         password = request.form.get('password')
         branch = request.form.get('branch')
         year = request.form.get('year')
@@ -185,52 +199,40 @@ def register():
 
     return render_template('register.html')
 
-# --- CORRECTED LOGIN FUNCTION ---
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('home')) # Already logged in? Go home.
+        return redirect(url_for('home'))
 
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
 
-        # Check if user exists and password is correct
         if user and bcrypt.check_password_hash(user.password, password):
-            # Generate a new OTP for every login attempt
             otp = secrets.token_hex(3).upper()
             user.otp = otp
             user.otp_generated_at = datetime.utcnow()
             db.session.commit()
 
-            # Try to send the OTP email
             if send_otp_email(user.email, otp, user.name):
                 flash('Please check your email for a login verification code.', 'info')
-                # Redirect to the OTP entry page
                 return redirect(url_for('verify_otp', email=user.email))
             else:
-                # If email fails, show an error but stay on login page
                 flash('Could not send verification email. Please try again or contact an admin.', 'danger')
                 return redirect(url_for('login'))
         else:
-            # If email/password is wrong, show error and stay on login page
             flash('Login unsuccessful. Please check email and password.', 'danger')
-            # DO NOT CALL login_user() HERE
 
-    # If GET request or failed POST, show the login form
     return render_template('login.html')
 
-# --- CORRECTED VERIFY OTP FUNCTION ---
 @app.route("/verify_otp/<email>", methods=['GET', 'POST'])
 def verify_otp(email):
     user = User.query.filter_by(email=email).first_or_404()
 
-    # If user is already logged in (maybe they refreshed after successful OTP), send home
     if current_user.is_authenticated and current_user.id == user.id:
          return redirect(url_for('home'))
 
-    # Safety check: If user somehow got here without needing OTP, redirect to login
     if user.otp is None or user.otp_generated_at is None:
          flash('No pending verification found. Please log in.', 'warning')
          return redirect(url_for('login'))
@@ -238,27 +240,22 @@ def verify_otp(email):
     if request.method == 'POST':
         entered_otp = request.form.get('otp')
 
-        # Check for OTP expiration (10 minutes)
         time_diff = datetime.utcnow() - user.otp_generated_at
         if time_diff.total_seconds() > 600:
-            user.otp = None # Clear expired OTP
+            user.otp = None
             user.otp_generated_at = None
             db.session.commit()
             flash('OTP has expired. Please try logging in again to get a new one.', 'danger')
             return redirect(url_for('login'))
 
-        # Check if OTP is correct
         if user.otp == entered_otp:
-            # Mark account as verified if it wasn't already (for first-time registration)
             was_already_verified = user.is_verified
             user.is_verified = True
-            user.otp = None # Clear OTP after use
+            user.otp = None
             user.otp_generated_at = None
             db.session.commit()
 
-            # --- THIS IS THE ONLY PLACE LOGIN SHOULD HAPPEN ---
             login_user(user, remember=True)
-            # ---
 
             if not was_already_verified:
                  flash('Email verified successfully! You are now logged in.', 'success')
@@ -268,7 +265,6 @@ def verify_otp(email):
         else:
             flash('Invalid OTP. Please try again.', 'danger')
 
-    # If GET request or invalid OTP, show the OTP entry form
     return render_template('verify_otp.html', email=email)
 
 
@@ -410,23 +406,20 @@ def init_db_command():
     """Clears the existing data and creates new tables."""
     db.create_all()
     print("Initialized the database.")
-    admin_email = 'buddaramvamshidhar@gmail.com' # Your admin email
-    if not User.query.filter_by(email=admin_email).first():
-        password = 'password' # Default admin password
+    admin_email = os.environ.get('ADMIN_EMAIL', 'buddaramvamshidhar@gmail.com') # Get admin email from env or default
+    admin = User.query.filter_by(email=admin_email).first()
+    if not admin:
+        password = os.environ.get('ADMIN_PASSWORD', 'password') # Get password from env or default
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         admin_user = User(name='Admin', email=admin_email, roll_number='ADMIN001', password=hashed_password, branch='SYSTEM', year=0, role='admin', is_verified=True)
         db.session.add(admin_user)
         db.session.commit()
-        print(f"Admin user created with email: {admin_email} and password: {password}")
-    else:
-        # Ensure existing admin is verified
-        admin = User.query.filter_by(email=admin_email).first()
-        if not admin.is_verified:
-            admin.is_verified = True
-            db.session.commit()
-            print(f"Ensured admin user {admin_email} is verified.")
+        print(f"Admin user created with email: {admin_email} and default password (if not set in env).")
+    elif not admin.is_verified:
+        admin.is_verified = True
+        db.session.commit()
+        print(f"Ensured admin user {admin_email} is verified.")
 
-
-
-
-
+# --- Main Run Block (Optional, for running with `python app.py`) ---
+# if __name__ == '__main__':
+#     app.run(debug=True) # Set debug=False for production
