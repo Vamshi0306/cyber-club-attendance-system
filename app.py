@@ -32,6 +32,15 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message_category = 'info' # Use Bootstrap 'info' class for messages
 
+# --- CONTEXT PROCESSOR ---
+# Makes 'now' available in all templates for the current year
+@app.context_processor
+def inject_now():
+    return {'now': datetime.utcnow}
+
+# --- HELPER FUNCTIONS ---
+# ... (rest of your app.py code) ...
+
 # --- HELPER FUNCTIONS ---
 def save_picture(form_picture):
     random_hex = secrets.token_hex(8)
@@ -413,4 +422,5 @@ def init_db_command():
             admin.is_verified = True
             db.session.commit()
             print(f"Ensured admin user {admin_email} is verified.")
+
 
