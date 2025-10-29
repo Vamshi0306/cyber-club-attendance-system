@@ -1,7 +1,19 @@
-# Local database
-instance/
-site.db
-
-# Python cache
+# Python cache files
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Local database file
+instance/
+site.db
+site.db-journal
+
+# Environment files
+.env  # <-- ADDED
+.venv
+venv/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
